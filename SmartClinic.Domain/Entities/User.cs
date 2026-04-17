@@ -1,14 +1,18 @@
 namespace SmartClinic.Domain.Entities;
 
-public class User
+public class User : BaseEntity
 {
-    public int Id { get; set; }
+    public string FirstName { get; set; } = string.Empty;
 
-    public string Name { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
 
     public string Email { get; set; } = string.Empty;
 
     public string PasswordHash { get; set; } = string.Empty;
+
+    public string Phone { get; set; } = string.Empty;
+
+    public string Status { get; set; } = "Active";
 
     public int RoleId { get; set; }
 

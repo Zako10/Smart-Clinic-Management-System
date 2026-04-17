@@ -1,8 +1,8 @@
 namespace SmartClinic.Domain.Entities;
 
-public class Subscription
+public class Subscription : BaseEntity
 {
-    public int Id { get; set; }
+    public int ClinicId { get; set; }
 
     public string PlanName { get; set; } = string.Empty;
 
@@ -12,5 +12,7 @@ public class Subscription
 
     public DateTime EndDate { get; set; }
 
-    public ICollection<Clinic> Clinics { get; set; } = new List<Clinic>();
+    public string Status { get; set; } = "Active";
+
+    public Clinic Clinic { get; set; } = null!;
 }
