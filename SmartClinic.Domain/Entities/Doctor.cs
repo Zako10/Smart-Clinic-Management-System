@@ -1,0 +1,19 @@
+namespace SmartClinic.Domain.Entities;
+
+public class Doctor : BaseEntity
+{
+    public string FirstName { get; set; } = string.Empty;
+
+    public string LastName { get; set; } = string.Empty;
+
+    public string Specialty { get; set; } = string.Empty;
+
+    public string Phone { get; set; } = string.Empty;
+
+    public int ClinicId { get; set; }
+
+    public Clinic Clinic { get; set; } = null!;
+
+    public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
+    public ICollection<MedicalRecord> MedicalRecords { get; set; } = new List<MedicalRecord>();
+}
