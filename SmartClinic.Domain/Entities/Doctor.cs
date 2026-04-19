@@ -1,4 +1,5 @@
 namespace SmartClinic.Domain.Entities;
+using SmartClinic.Domain.Common;
 
 public class Doctor : BaseEntity
 {
