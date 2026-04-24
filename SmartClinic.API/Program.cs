@@ -1,10 +1,32 @@
-var builder = WebApplication.CreateBuilder(args);
+using SmartClinic.Application.Interfaces;
+using SmartClinic.Application.Services;
+using SmartClinic.Infrastructure.Repositories;
+using SmartClinic.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+using SmartClinic.Application.Common.Mapping;
+using SmartClinic.API.Middleware;
+using AutoMapper;
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 
+builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+builder.Services.AddScoped<IClinicService ,ClinicService>();
+builder.Services.AddScoped<PatientService>();
+builder.Services.AddControllers();
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
+builder.Services.AddSwaggerGen();
+
 var app = builder.Build();
+
+app.UseSwagger();
+app.UseSwaggerUI();
+app.UseMiddleware<ExceptionMiddleware>();
+app.MapControllers();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
