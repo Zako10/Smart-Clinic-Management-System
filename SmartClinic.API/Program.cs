@@ -13,6 +13,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IClinicService ,ClinicService>();
 builder.Services.AddScoped<PatientService>();
+builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddControllers();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(
