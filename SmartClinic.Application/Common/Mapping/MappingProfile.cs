@@ -1,6 +1,7 @@
 using AutoMapper;
 using SmartClinic.Application.DTOs.Appointment;
 using SmartClinic.Application.DTOs.Clinic;
+using SmartClinic.Application.DTOs.Doctor;
 using SmartClinic.Application.DTOs.Patient;
 using SmartClinic.Domain.Entities;
 
@@ -26,6 +27,11 @@ public class MappingProfile : Profile
 
         CreateMap<Appointment, AppointmentDto>();
         CreateMap<CreateAppointmentDto, Appointment>();
+
+
+
+        CreateMap<Doctor, DoctorDto>();
+        CreateMap<CreateDoctorDto, Doctor>();
 
     }
 }
