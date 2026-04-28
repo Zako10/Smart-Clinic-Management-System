@@ -40,7 +40,7 @@ public class AppointmentService : IAppointmentService
     {
         var appointment = await _repo.GetByIdAsync(id);
         if (appointment == null)
-            throw new Exception("Appointment not found");
+            throw new KeyNotFoundException("Appointment not found");
         _mapper.Map(dto, appointment);
         _repo.Update(appointment);
         await _repo.SaveChangesAsync();
@@ -50,7 +50,7 @@ public class AppointmentService : IAppointmentService
     {
         var appointment = await _repo.GetByIdAsync(id);
         if (appointment == null)
-            throw new Exception("Appointment not found");
+            throw new KeyNotFoundException("Appointment not found");
         _repo.Delete(appointment);
         await _repo.SaveChangesAsync();
     }

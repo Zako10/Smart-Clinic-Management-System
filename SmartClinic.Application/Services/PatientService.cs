@@ -26,6 +26,9 @@ public class PatientService
     {
         var patient = _mapper.Map<Patient>(dto);
 
+        if (string.IsNullOrWhiteSpace(dto.FirstName))
+            throw new Exception("First name is required");
+
         await _repo.AddAsync(patient);
         await _repo.SaveChangesAsync();
     }

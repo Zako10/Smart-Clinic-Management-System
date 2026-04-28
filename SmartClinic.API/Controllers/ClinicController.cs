@@ -18,7 +18,6 @@ public class ClinicController : ControllerBase
         _service = service;
     }
 
-    // 🔹 GET ALL
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
@@ -31,7 +30,6 @@ public class ClinicController : ControllerBase
         ));
     }
 
-    // 🔹 GET BY ID
     [HttpGet("{id}")]
     public async Task<IActionResult> Get(int id)
     {
@@ -53,7 +51,6 @@ public class ClinicController : ControllerBase
         ));
     }
 
-    // 🔹 CREATE
     [HttpPost]
     public async Task<IActionResult> Create(CreateClinicDto dto)
     {
@@ -68,14 +65,13 @@ public class ClinicController : ControllerBase
 
         await _service.Add(dto);
 
-        return Ok(new ApiResponse<string>(
+        return Created("", new ApiResponse<string>(
             true,
             "Clinic created successfully",
             null
         ));
     }
 
-    // 🔹 UPDATE
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, CreateClinicDto dto)
     {
@@ -108,7 +104,6 @@ public class ClinicController : ControllerBase
         ));
     }
 
-    // 🔹 DELETE
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {

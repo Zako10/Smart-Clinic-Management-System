@@ -1,5 +1,6 @@
 namespace SmartClinic.Domain.Entities;
 using SmartClinic.Domain.Common;
+using SmartClinic.Domain.Enums;
 
 public class Invoice : BaseEntity
 {
@@ -9,8 +10,8 @@ public class Invoice : BaseEntity
 
     public DateTime IssueDate { get; set; }
 
-    public string Status { get; set; } = "Pending";
-
+    public InvoiceStatus Status { get; set; } = InvoiceStatus.Pending;
+    
     public int ClinicId { get; set; }
 
     public Appointment Appointment { get; set; } = null!;

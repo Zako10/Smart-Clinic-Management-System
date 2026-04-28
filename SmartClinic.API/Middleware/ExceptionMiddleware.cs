@@ -30,8 +30,9 @@ public class ExceptionMiddleware
 
         var response = new
         {
-            message = ex.Message,
-            statusCode = (int)HttpStatusCode.InternalServerError
+            success = false,
+            message = "An error occurred",
+            error = ex.Message // dev only
         };
 
         context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;

@@ -42,7 +42,7 @@ public class AppointmentController : ControllerBase
             return BadRequest(new ApiResponse<string>(
                 false, "Invalid data", null));
         await _service.Add(dto);
-        return Ok(new ApiResponse<string>(
+        return Created("", new ApiResponse<string>(
             true, "Appointment created successfully", null));
     }
 

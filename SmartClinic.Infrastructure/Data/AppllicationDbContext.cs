@@ -133,15 +133,27 @@ public class ApplicationDbContext : DbContext
             .HasConversion<string>();
 
         builder.Entity<Payment>()
-            .Property(p => p.Status)
+            .Property(p => p.Method)
             .HasConversion<string>();
 
         builder.Entity<Payment>()
-            .Property(p => p.Method)
-            .HasConversion<string>();
+            .Property(p => p.Status)
+            .HasMaxLength(50);
 
         builder.Entity<Subscription>()
             .Property(s => s.Status)
             .HasConversion<string>();
+
+        builder.Entity<Invoice>()
+            .Property(i => i.TotalAmount)
+            .HasPrecision(18,2);
+
+        builder.Entity<Payment>()
+            .Property(p => p.Amount)
+            .HasPrecision(18,2);
+
+        builder.Entity<InventoryItem>()
+            .Property(i => i.Price)
+            .HasPrecision(18,2);
     }
 }
