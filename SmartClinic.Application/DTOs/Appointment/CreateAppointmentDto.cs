@@ -13,6 +13,7 @@ public class CreateAppointmentDto
     [Required]
     public int DoctorId { get; set; }
     [Required]
+    
     public int ClinicId { get; set; }
     public AppointmentStatus Status { get; set; } = AppointmentStatus.Scheduled;
     public string Notes { get; set; } = string.Empty;
