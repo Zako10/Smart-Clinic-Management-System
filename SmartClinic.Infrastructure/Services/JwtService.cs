@@ -19,6 +19,18 @@ public class JwtService : IJwtService
 
     public string GenerateToken(User user, string role)
     {
+        var jwtKey = _config["Jwt:Key"]
+            ?? throw new InvalidOperationException("Jwt:Key is missing.");
+        var jwtIssuer = _config["Jwt:Issuer"]
+            ?? throw new InvalidOperationException("Jwt:Issuer is missing.");
+        var jwtAudience = _config["Jwt:Audience"]
+            ?? throw new InvalidOperationException("Jwt:Audience is missing.");
+
+        if (Encoding.UTF8.GetByteCount(jwtKey) < 32)
+        {
+            throw new InvalidOperationException("Jwt:Key must be at least 32 bytes.");
+        }
+
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
@@ -27,14 +39,13 @@ public class JwtService : IJwtService
             new Claim("ClinicId", user.ClinicId.ToString())
         };
 
-        var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
 
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
-            issuer: _config["Jwt:Issuer"],
-            audience: _config["Jwt:Audience"],
+            issuer: jwtIssuer,
+            audience: jwtAudience,
             claims: claims,
             expires: DateTime.UtcNow.AddDays(7),
             signingCredentials: creds

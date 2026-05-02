@@ -20,15 +20,13 @@ public class UserRepository : Repository<User>, IUserRepository
     public async Task<bool> ExistsByEmailAsync(string email)
         => await _db.Users.AnyAsync(u => u.Email == email);
 
-    public async Task<string> GetRoleNameAsync(int roleId)
+    public async Task<string?> GetRoleNameAsync(int roleId)
     {
         var role = await _db.Roles.FindAsync(roleId);
-        return role?.Name ?? "Unknown";
+        return role?.Name;
     }
 
-    public async Task AddAsync(User user)
-        => await _db.Users.AddAsync(user);
+    public async Task<bool> ClinicExistsAsync(int clinicId)
+        => await _db.Clinics.AnyAsync(c => c.Id == clinicId);
 
-    public async Task SaveChangesAsync()
-        => await _db.SaveChangesAsync();
 }

@@ -1,27 +1,30 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartClinic.Application.Common.Responses;
 using SmartClinic.Application.DTOs.Payment;
-using SmartClinic.Application.Services;
+using SmartClinic.Application.Interfaces;
 
 namespace SmartClinic.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class PaymentController : ControllerBase
 {
-    private readonly PaymentService _service;
+    private readonly IPaymentService _service;
 
-    public PaymentController(PaymentService service)
+    public PaymentController(IPaymentService service)
     {
         _service = service;
     }
 
     [HttpPost]
+    [Authorize(Policy = "AdminOrReceptionist")]
     public async Task<IActionResult> Create(CreatePaymentDto dto)
     {
         await _service.Add(dto);
 
         return Ok(new ApiResponse<string>(
-            true, "Payment successful", null));
+            true, "Payment created successfully", null));
     }
 }

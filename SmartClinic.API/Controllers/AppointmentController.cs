@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SmartClinic.Application.Common.Responses;
 using SmartClinic.Application.DTOs.Appointment;
 using SmartClinic.Application.Interfaces;
@@ -7,6 +8,7 @@ namespace SmartClinic.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class AppointmentController : ControllerBase
 {
     private readonly IAppointmentService _service;
@@ -17,6 +19,7 @@ public class AppointmentController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Policy = "AdminOrDoctor")]
     public async Task<IActionResult> GetAll()
     {
         var appointments = await _service.GetAll();
@@ -25,6 +28,7 @@ public class AppointmentController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [Authorize(Policy = "AdminOrDoctor")]
     public async Task<IActionResult> Get(int id)
     {
         var appointment = await _service.GetById(id);
@@ -36,17 +40,19 @@ public class AppointmentController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "AdminOrReceptionist")]
     public async Task<IActionResult> Create(CreateAppointmentDto dto)
     {
         if (!ModelState.IsValid)
             return BadRequest(new ApiResponse<string>(
                 false, "Invalid data", null));
         await _service.Add(dto);
-        return Created("", new ApiResponse<string>(
+        return StatusCode(StatusCodes.Status201Created, new ApiResponse<string>(
             true, "Appointment created successfully", null));
     }
 
     [HttpPut("{id}")]
+    [Authorize(Policy = "AdminOrDoctor")]
     public async Task<IActionResult> Update(int id, CreateAppointmentDto dto)
     {
         if (!ModelState.IsValid)
@@ -62,6 +68,7 @@ public class AppointmentController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Policy = "AdminOnly")]
     public async Task<IActionResult> Delete(int id)
     {
         var existing = await _service.GetById(id);

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SmartClinic.Application.Common.Responses;
 using SmartClinic.Application.DTOs.Doctor;
 using SmartClinic.Application.Interfaces;
@@ -7,6 +8,7 @@ namespace SmartClinic.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class DoctorController : ControllerBase
 {
     private readonly IDoctorService _service;
@@ -17,6 +19,7 @@ public class DoctorController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Policy = "AdminOrDoctor")]
     public async Task<IActionResult> GetAll()
     {
         var doctors = await _service.GetAll();
@@ -25,6 +28,7 @@ public class DoctorController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [Authorize(Policy = "AdminOrDoctor")]
     public async Task<IActionResult> Get(int id)
     {
         var doctor = await _service.GetById(id);
@@ -36,17 +40,19 @@ public class DoctorController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "AdminOnly")]
     public async Task<IActionResult> Create(CreateDoctorDto dto)
     {
         if (!ModelState.IsValid)
             return BadRequest(new ApiResponse<string>(
                 false, "Invalid data", null));
         await _service.Add(dto);
-        return Created("", new ApiResponse<string>(
+        return StatusCode(StatusCodes.Status201Created, new ApiResponse<string>(
             true, "Doctor created successfully", null));
     }
 
     [HttpPut("{id}")]
+    [Authorize(Policy = "AdminOnly")]
     public async Task<IActionResult> Update(int id, CreateDoctorDto dto)
     {
         if (!ModelState.IsValid)
@@ -62,6 +68,7 @@ public class DoctorController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Policy = "AdminOnly")]
     public async Task<IActionResult> Delete(int id)
     {
         var existing = await _service.GetById(id);

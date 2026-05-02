@@ -1,4 +1,4 @@
-﻿namespace SmartClinic.Application.Auth.DTOs;
+namespace SmartClinic.Application.DTOs.Auth;
 
 public record AuthResult(
     string Token,
