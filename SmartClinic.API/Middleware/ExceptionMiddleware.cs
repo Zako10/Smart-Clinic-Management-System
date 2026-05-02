@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using SmartClinic.Application.Common.Exceptions;
 
 namespace SmartClinic.API.Middleware;
 
@@ -31,6 +32,8 @@ public class ExceptionMiddleware
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = ex switch
         {
+            AppValidationException => (int)HttpStatusCode.BadRequest,
+            ConflictException => (int)HttpStatusCode.Conflict,
             UnauthorizedAccessException => (int)HttpStatusCode.Unauthorized,
             KeyNotFoundException => (int)HttpStatusCode.NotFound,
             ArgumentException or InvalidOperationException => (int)HttpStatusCode.BadRequest,
@@ -41,6 +44,9 @@ public class ExceptionMiddleware
         {
             success = false,
             message = ex.Message,
+            errors = ex is AppValidationException validationException
+                ? validationException.Errors
+                : null,
             detail = environment.IsDevelopment() ? ex.ToString() : null
         };
 

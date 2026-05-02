@@ -1,4 +1,5 @@
-﻿using SmartClinic.Application.Auth.Commands;
+using SmartClinic.Application.Auth.Commands;
+using SmartClinic.Application.Common.Validation;
 using SmartClinic.Application.DTOs.Auth;
 using SmartClinic.Application.Interfaces;
 
@@ -8,15 +9,22 @@ public class LoginHandler
 {
     private readonly IUserRepository _userRepo;
     private readonly IJwtService _jwtService;
+    private readonly ICommandValidator<LoginCommand> _validator;
 
-    public LoginHandler(IUserRepository userRepo, IJwtService jwtService)
+    public LoginHandler(
+        IUserRepository userRepo,
+        IJwtService jwtService,
+        ICommandValidator<LoginCommand> validator)
     {
         _userRepo = userRepo;
         _jwtService = jwtService;
+        _validator = validator;
     }
 
     public async Task<AuthResult> Handle(LoginCommand command)
     {
+        _validator.Validate(command);
+
         var email = command.Email.Trim().ToLowerInvariant();
         var user = await _userRepo.GetByEmailAsync(email);
         if (user is null)

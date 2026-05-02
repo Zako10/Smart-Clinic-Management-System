@@ -5,8 +5,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SmartClinic.API.Middleware;
+using SmartClinic.Application.Auth.Commands;
 using SmartClinic.Application.Auth.Handlers;
+using SmartClinic.Application.Auth.Validation;
 using SmartClinic.Application.Common.Mapping;
+using SmartClinic.Application.Common.Validation;
 using SmartClinic.Application.Interfaces;
 using SmartClinic.Application.Services;
 using SmartClinic.Domain.Entities;
@@ -45,6 +48,8 @@ builder.Services.AddAutoMapper(_ => { }, typeof(MappingProfile).Assembly);
 // Auth Services
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<ICommandValidator<RegisterCommand>, RegisterCommandValidator>();
+builder.Services.AddScoped<ICommandValidator<LoginCommand>, LoginCommandValidator>();
 builder.Services.AddScoped<RegisterHandler>();
 builder.Services.AddScoped<LoginHandler>();
 
