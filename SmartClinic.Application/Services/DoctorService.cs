@@ -40,7 +40,7 @@ public class DoctorService : IDoctorService
     {
         var doctor = await _repo.GetByIdAsync(id);
         if (doctor == null)
-            throw new Exception("Doctor not found");
+            throw new KeyNotFoundException("Doctor not found");
         _mapper.Map(dto, doctor);
         _repo.Update(doctor);
         await _repo.SaveChangesAsync();
@@ -50,7 +50,7 @@ public class DoctorService : IDoctorService
     {
         var doctor = await _repo.GetByIdAsync(id);
         if (doctor == null)
-            throw new Exception("Doctor not found");
+            throw new KeyNotFoundException("Doctor not found");
         _repo.Delete(doctor);
         await _repo.SaveChangesAsync();
     }

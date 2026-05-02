@@ -60,7 +60,7 @@ public async Task<IActionResult> Create(CreatePatientDto dto)
 
     await _service.Add(dto);
 
-    return Ok(new ApiResponse<string>(
+    return Created("", new ApiResponse<string>(
         true,
         "Patient created successfully",
         null

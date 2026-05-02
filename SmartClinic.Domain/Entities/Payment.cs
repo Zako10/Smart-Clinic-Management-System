@@ -1,5 +1,6 @@
 namespace SmartClinic.Domain.Entities;
 using SmartClinic.Domain.Common;
+using SmartClinic.Domain.Enums;
 
 public class Payment : BaseEntity
 {
@@ -9,9 +10,9 @@ public class Payment : BaseEntity
 
     public DateTime PaymentDate { get; set; }
 
-    public string Method { get; set; } = string.Empty;
+    public PaymentMethod Method { get; set; }
 
     public string Status { get; set; } = "Completed";
-
+    
     public Invoice Invoice { get; set; } = null!;
 }
