@@ -1,6 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using SmartClinic.API.Extensions;
 using SmartClinic.Application.Auth.Commands;
 using SmartClinic.Application.Auth.Handlers;
+using SmartClinic.Application.Common.Responses;
 
 namespace SmartClinic.API.Controllers;
 
@@ -18,6 +21,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
+    [AllowAnonymous]
     public async Task<IActionResult> Register([FromBody] RegisterCommand command)
     {
         var result = await _registerHandler.Handle(command);
@@ -25,9 +29,28 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
+    [AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] LoginCommand command)
     {
         var result = await _loginHandler.Handle(command);
         return Ok(result);
+    }
+
+    [HttpGet("me")]
+    [Authorize]
+    public IActionResult GetCurrentUser()
+    {
+        var userId = User.GetUserId();
+        var role = User.GetRole();
+        var clinicId = User.GetClinicId();
+
+        return Ok(new ApiResponse<object>(
+            true, "User claims retrieved",
+            new
+            {
+                UserId = userId,
+                Role = role,
+                ClinicId = clinicId
+            }));
     }
 }

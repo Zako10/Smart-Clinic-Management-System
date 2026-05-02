@@ -28,6 +28,13 @@ public class InvoiceService : IInvoiceService
         return _mapper.Map<IEnumerable<InvoiceDto>>(invoices);
     }
 
+    public async Task<InvoiceDto?> GetById(int id)
+    {
+        var invoice = await _repo.GetByIdAsync(id);
+        if (invoice == null) return null;
+        return _mapper.Map<InvoiceDto>(invoice);
+    }
+
     public async Task Add(CreateInvoiceDto dto)
     {
         var appointment = await _appointmentRepo.GetByIdAsync(dto.AppointmentId);
@@ -45,10 +52,33 @@ public class InvoiceService : IInvoiceService
         {
             AppointmentId = dto.AppointmentId,
             TotalAmount = dto.TotalAmount,
-            Status = InvoiceStatus.Pending
+            IssueDate = DateTime.UtcNow,
+            Status = InvoiceStatus.Pending,
+            ClinicId = appointment.ClinicId
         };
 
         await _repo.AddAsync(invoice);
+        await _repo.SaveChangesAsync();
+    }
+
+    public async Task Update(int id, CreateInvoiceDto dto)
+    {
+        var invoice = await _repo.GetByIdAsync(id);
+        if (invoice == null)
+            throw new KeyNotFoundException("Invoice not found");
+
+        _mapper.Map(dto, invoice);
+        _repo.Update(invoice);
+        await _repo.SaveChangesAsync();
+    }
+
+    public async Task Delete(int id)
+    {
+        var invoice = await _repo.GetByIdAsync(id);
+        if (invoice == null)
+            throw new KeyNotFoundException("Invoice not found");
+
+        _repo.Delete(invoice);
         await _repo.SaveChangesAsync();
     }
 }
