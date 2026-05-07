@@ -153,6 +153,7 @@ using (var scope = app.Services.CreateScope())
     db.SaveChanges();
 }
 
+app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseMiddleware<ExceptionMiddleware>();
 app.UseHttpsRedirection();
 

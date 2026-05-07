@@ -25,7 +25,12 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Register([FromBody] RegisterCommand command)
     {
         var result = await _registerHandler.Handle(command);
-        return Ok(result);
+
+        return Ok(new ApiResponse<object>(
+            true,
+            "User registered successfully",
+            result
+        ));
     }
 
     [HttpPost("login")]
@@ -33,7 +38,12 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Login([FromBody] LoginCommand command)
     {
         var result = await _loginHandler.Handle(command);
-        return Ok(result);
+
+        return Ok(new ApiResponse<object>(
+            true,
+            "Login successful",
+            result
+        ));
     }
 
     [HttpGet("me")]
@@ -45,7 +55,8 @@ public class AuthController : ControllerBase
         var clinicId = User.GetClinicId();
 
         return Ok(new ApiResponse<object>(
-            true, "User claims retrieved",
+            true,
+            "User claims retrieved",
             new
             {
                 UserId = userId,

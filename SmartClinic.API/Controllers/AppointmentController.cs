@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartClinic.Application.Common.Pagination;
 using SmartClinic.Application.Common.Responses;
 using SmartClinic.Application.DTOs.Appointment;
 using SmartClinic.Application.Interfaces;
@@ -20,11 +21,14 @@ public class AppointmentController : ControllerBase
 
     [HttpGet]
     [Authorize(Policy = "AdminOrDoctor")]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] PaginationRequest request)
     {
-        var appointments = await _service.GetAll();
-        return Ok(new ApiResponse<IEnumerable<AppointmentDto>>(
-            true, "Appointments retrieved successfully", appointments));
+        var data = await _service.GetPagedAsync(request);
+
+        return Ok(new ApiResponse<PaginatedResult<AppointmentDto>>(
+            true,
+            "Appointment retrieved successfully",
+            data));
     }
 
     [HttpGet("{id}")]

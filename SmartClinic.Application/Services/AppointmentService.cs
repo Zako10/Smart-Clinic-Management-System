@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+using AutoMapper;
+using SmartClinic.Application.Common.Pagination;
 using SmartClinic.Application.DTOs.Appointment;
 using SmartClinic.Application.Interfaces;
 using SmartClinic.Domain.Entities;
@@ -20,6 +21,28 @@ public class AppointmentService : IAppointmentService
     {
         var appointments = await _repo.GetAllAsync();
         return _mapper.Map<IEnumerable<AppointmentDto>>(appointments);
+    }
+
+    public Task<PaginatedResult<AppointmentDto>> GetPagedAsync(PaginationRequest request)
+    {
+        var query = _repo.Query().OrderBy(x => x.Id);
+
+        var totalCount = query.Count();
+
+        var items = query
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .ToList();
+
+        var mappedItems = _mapper.Map<List<AppointmentDto>>(items);
+
+        return Task.FromResult(new PaginatedResult<AppointmentDto>
+        {
+            Items = mappedItems,
+            PageNumber = request.PageNumber,
+            PageSize = request.PageSize,
+            TotalCount = totalCount
+        });
     }
 
     public async Task<AppointmentDto?> GetById(int id)

@@ -1,6 +1,6 @@
 namespace SmartClinic.Application.Common.Validation;
 
-public interface ICommandValidator<in TCommand>
+public interface ICommandValidator<T>
 {
-    void Validate(TCommand command);
+    void Validate(T command);
 }

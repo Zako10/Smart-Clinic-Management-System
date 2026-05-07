@@ -9,43 +9,35 @@ public class RegisterCommandValidator : ICommandValidator<RegisterCommand>
 {
     public void Validate(RegisterCommand command)
     {
-        var errors = new Dictionary<string, List<string>>();
+        var errors = new Dictionary<string, string[]>();
 
-        if (command is null)
-        {
-            Add(errors, "Request", "Request body is required.");
-            ThrowIfInvalid(errors);
-            return;
-        }
+        if (string.IsNullOrWhiteSpace(command.FirstName))
+            errors[nameof(command.FirstName)] = ["First name is required."];
 
-        AddRequired(errors, nameof(command.FirstName), command.FirstName);
-        AddRequired(errors, nameof(command.LastName), command.LastName);
-        AddRequired(errors, nameof(command.Email), command.Email);
-        AddRequired(errors, nameof(command.Password), command.Password);
-        AddRequired(errors, nameof(command.Phone), command.Phone);
+        if (string.IsNullOrWhiteSpace(command.LastName))
+            errors[nameof(command.LastName)] = ["Last name is required."];
 
-        if (!string.IsNullOrWhiteSpace(command.Email) &&
-            !new EmailAddressAttribute().IsValid(command.Email))
-        {
-            Add(errors, nameof(command.Email), "Email must be a valid email address.");
-        }
+        if (string.IsNullOrWhiteSpace(command.Email))
+            errors[nameof(command.Email)] = ["Email is required."];
+        else if (!command.Email.Contains('@'))
+            errors[nameof(command.Email)] = ["Email format is invalid."];
 
-        if (!string.IsNullOrEmpty(command.Password) && command.Password.Length < 8)
-        {
-            Add(errors, nameof(command.Password), "Password must be at least 8 characters.");
-        }
+        if (string.IsNullOrWhiteSpace(command.Password))
+            errors[nameof(command.Password)] = ["Password is required."];
+        else if (command.Password.Length < 6)
+            errors[nameof(command.Password)] = ["Password must be at least 6 characters."];
+
+        if (string.IsNullOrWhiteSpace(command.Phone))
+            errors[nameof(command.Phone)] = ["Phone is required."];
 
         if (command.RoleId <= 0)
-        {
-            Add(errors, nameof(command.RoleId), "RoleId must be greater than zero.");
-        }
+            errors[nameof(command.RoleId)] = ["RoleId must be greater than 0."];
 
         if (command.ClinicId <= 0)
-        {
-            Add(errors, nameof(command.ClinicId), "ClinicId must be greater than zero.");
-        }
+            errors[nameof(command.ClinicId)] = ["ClinicId must be greater than 0."];
 
-        ThrowIfInvalid(errors);
+        if (errors.Count > 0)
+            throw new AppValidationException(errors);
     }
 
     private static void AddRequired(Dictionary<string, List<string>> errors, string field, string? value)

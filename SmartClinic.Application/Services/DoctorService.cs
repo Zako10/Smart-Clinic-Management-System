@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+using AutoMapper;
+using SmartClinic.Application.Common.Pagination;
 using SmartClinic.Application.DTOs.Doctor;
 using SmartClinic.Application.Interfaces;
 using SmartClinic.Domain.Entities;
@@ -20,6 +21,28 @@ public class DoctorService : IDoctorService
     {
         var doctors = await _repo.GetAllAsync();
         return _mapper.Map<IEnumerable<DoctorDto>>(doctors);
+    }
+
+    public Task<PaginatedResult<DoctorDto>> GetPagedAsync(PaginationRequest request)
+    {
+        var query = _repo.Query().OrderBy(x => x.Id);
+
+        var totalCount = query.Count();
+
+        var items = query
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .ToList();
+
+        var mappedItems = _mapper.Map<List<DoctorDto>>(items);
+
+        return Task.FromResult(new PaginatedResult<DoctorDto>
+        {
+            Items = mappedItems,
+            PageNumber = request.PageNumber,
+            PageSize = request.PageSize,
+            TotalCount = totalCount
+        });
     }
 
     public async Task<DoctorDto?> GetById(int id)

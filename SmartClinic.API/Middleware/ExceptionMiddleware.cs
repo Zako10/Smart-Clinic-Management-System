@@ -7,12 +7,12 @@ namespace SmartClinic.API.Middleware;
 public class ExceptionMiddleware
 {
     private readonly RequestDelegate _next;
-    private readonly IHostEnvironment _environment;
+    private readonly ILogger<ExceptionMiddleware> _logger;
 
-    public ExceptionMiddleware(RequestDelegate next, IHostEnvironment environment)
+    public ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger)
     {
         _next = next;
-        _environment = environment;
+        _logger = logger;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -23,33 +23,48 @@ public class ExceptionMiddleware
         }
         catch (Exception ex)
         {
-            await HandleException(context, ex, _environment);
+            _logger.LogError(
+                ex,
+                "Unhandled exception for {Method} {Path}",
+                context.Request.Method,
+                context.Request.Path);
+
+            await HandleException(context, ex);
         }
     }
 
-    private static Task HandleException(HttpContext context, Exception ex, IHostEnvironment environment)
+    private static async Task HandleException(HttpContext context, Exception ex)
     {
         context.Response.ContentType = "application/json";
-        context.Response.StatusCode = ex switch
+
+        var statusCode = ex switch
         {
             AppValidationException => (int)HttpStatusCode.BadRequest,
-            ConflictException => (int)HttpStatusCode.Conflict,
             UnauthorizedAccessException => (int)HttpStatusCode.Unauthorized,
             KeyNotFoundException => (int)HttpStatusCode.NotFound,
-            ArgumentException or InvalidOperationException => (int)HttpStatusCode.BadRequest,
+            InvalidOperationException => (int)HttpStatusCode.Conflict,
             _ => (int)HttpStatusCode.InternalServerError
         };
 
-        var response = new
+        context.Response.StatusCode = statusCode;
+
+        object response = ex switch
         {
-            success = false,
-            message = ex.Message,
-            errors = ex is AppValidationException validationException
-                ? validationException.Errors
-                : null,
-            detail = environment.IsDevelopment() ? ex.ToString() : null
+            AppValidationException validation =>
+                new
+                {
+                    success = false,
+                    message = "Validation failed",
+                    errors = validation.Errors
+                },
+            _ =>
+                new
+                {
+                    success = false,
+                    message = ex.Message
+                }
         };
 
-        return context.Response.WriteAsync(JsonSerializer.Serialize(response));
+        await context.Response.WriteAsync(JsonSerializer.Serialize(response));
     }
 }

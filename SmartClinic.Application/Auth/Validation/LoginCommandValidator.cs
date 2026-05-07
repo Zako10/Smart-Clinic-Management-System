@@ -9,25 +9,18 @@ public class LoginCommandValidator : ICommandValidator<LoginCommand>
 {
     public void Validate(LoginCommand command)
     {
-        var errors = new Dictionary<string, List<string>>();
+        var errors = new Dictionary<string, string[]>();
 
-        if (command is null)
-        {
-            Add(errors, "Request", "Request body is required.");
-            ThrowIfInvalid(errors);
-            return;
-        }
+        if (string.IsNullOrWhiteSpace(command.Email))
+            errors[nameof(command.Email)] = ["Email is required."];
+        else if (!command.Email.Contains('@'))
+            errors[nameof(command.Email)] = ["Email format is invalid."];
 
-        AddRequired(errors, nameof(command.Email), command.Email);
-        AddRequired(errors, nameof(command.Password), command.Password);
+        if (string.IsNullOrWhiteSpace(command.Password))
+            errors[nameof(command.Password)] = ["Password is required."];
 
-        if (!string.IsNullOrWhiteSpace(command.Email) &&
-            !new EmailAddressAttribute().IsValid(command.Email))
-        {
-            Add(errors, nameof(command.Email), "Email must be a valid email address.");
-        }
-
-        ThrowIfInvalid(errors);
+        if (errors.Count > 0)
+            throw new AppValidationException(errors);
     }
 
     private static void AddRequired(Dictionary<string, List<string>> errors, string field, string? value)
