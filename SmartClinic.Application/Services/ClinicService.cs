@@ -1,4 +1,5 @@
 using AutoMapper;
+using SmartClinic.Application.Common.Exceptions;
 using SmartClinic.Application.DTOs.Clinic;
 using SmartClinic.Application.Interfaces;
 using SmartClinic.Domain.Entities;
@@ -45,7 +46,7 @@ public class ClinicService : IClinicService
         var clinic = await _repo.GetByIdAsync(id);
 
         if (clinic == null)
-            throw new Exception("Clinic not found");
+            throw new KeyNotFoundException("Clinic not found");
 
         _mapper.Map(dto, clinic);
 
@@ -57,9 +58,8 @@ public class ClinicService : IClinicService
         var clinic = await _repo.GetByIdAsync(id);
 
         if (clinic == null)
-            throw new Exception("Clinic not found");
+            throw new KeyNotFoundException("Clinic not found");
 
-        _repo.Delete(clinic);
-        await _repo.SaveChangesAsync();
+        throw new BadRequestException("Clinic deletion is disabled to protect medical and billing history.");
     }
 }

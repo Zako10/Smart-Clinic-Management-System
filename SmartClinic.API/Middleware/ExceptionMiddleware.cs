@@ -1,6 +1,8 @@
 using System.Net;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 using SmartClinic.Application.Common.Exceptions;
+using SmartClinic.Application.Common.Responses;
 
 namespace SmartClinic.API.Middleware;
 
@@ -40,8 +42,12 @@ public class ExceptionMiddleware
         var statusCode = ex switch
         {
             AppValidationException => (int)HttpStatusCode.BadRequest,
+            BadRequestException => (int)HttpStatusCode.BadRequest,
             UnauthorizedAccessException => (int)HttpStatusCode.Unauthorized,
+            ForbiddenException => (int)HttpStatusCode.Forbidden,
             KeyNotFoundException => (int)HttpStatusCode.NotFound,
+            ConflictException => (int)HttpStatusCode.Conflict,
+            DbUpdateConcurrencyException => (int)HttpStatusCode.Conflict,
             InvalidOperationException => (int)HttpStatusCode.Conflict,
             _ => (int)HttpStatusCode.InternalServerError
         };
@@ -57,12 +63,15 @@ public class ExceptionMiddleware
                     message = "Validation failed",
                     errors = validation.Errors
                 },
+            _ when statusCode == (int)HttpStatusCode.InternalServerError =>
+                new ApiResponse<string>(false, "An unexpected error occurred.", null),
+            DbUpdateConcurrencyException =>
+                new ApiResponse<string>(
+                    false,
+                    "The record was changed by another request. Reload it and try again.",
+                    null),
             _ =>
-                new
-                {
-                    success = false,
-                    message = ex.Message
-                }
+                new ApiResponse<string>(false, ex.Message, null)
         };
 
         await context.Response.WriteAsync(JsonSerializer.Serialize(response));

@@ -5,12 +5,12 @@ using SmartClinic.Domain.Enums;
 namespace SmartClinic.Application.DTOs.Payment;
 public class CreatePaymentDto
 {
-    [Required]
+    [Range(1, int.MaxValue)]
     public int InvoiceId { get; set; }
 
-    [Required]
+    [Range(typeof(decimal), "0.01", "79228162514264337593543950335")]
     public decimal Amount { get; set; }
 
-    [Required]
+    [EnumDataType(typeof(PaymentMethod))]
     public PaymentMethod Method { get; set; }
 }

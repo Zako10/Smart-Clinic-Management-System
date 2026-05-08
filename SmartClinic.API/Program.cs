@@ -1,14 +1,17 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SmartClinic.API.Middleware;
+using SmartClinic.API.Services;
 using SmartClinic.Application.Auth.Commands;
 using SmartClinic.Application.Auth.Handlers;
 using SmartClinic.Application.Auth.Validation;
 using SmartClinic.Application.Common.Mapping;
+using SmartClinic.Application.Common.Responses;
 using SmartClinic.Application.Common.Validation;
 using SmartClinic.Application.Interfaces;
 using SmartClinic.Application.Services;
@@ -18,6 +21,10 @@ using SmartClinic.Infrastructure.Repositories;
 using SmartClinic.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
 
 var jwtKey = builder.Configuration["Jwt:Key"]
     ?? throw new InvalidOperationException("Jwt:Key is missing.");
@@ -31,6 +38,15 @@ if (Encoding.UTF8.GetByteCount(jwtKey) < 32)
     throw new InvalidOperationException("Jwt:Key must be at least 32 bytes.");
 }
 
+if (builder.Environment.IsProduction() &&
+    jwtKey == "YourSuperSecretKeyHereMustBe32CharsMin!")
+{
+    throw new InvalidOperationException("Jwt:Key must be provided by a secure production secret.");
+}
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<IApplicationDbTransaction, ApplicationDbTransaction>();
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IClinicService, ClinicService>();
 builder.Services.AddScoped<IPatientService, PatientService>();
@@ -38,7 +54,29 @@ builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<IDoctorService, DoctorService>();
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var errors = context.ModelState
+                .Where(entry => entry.Value?.Errors.Count > 0)
+                .ToDictionary(
+                    entry => entry.Key,
+                    entry => entry.Value!.Errors
+                        .Select(error => string.IsNullOrWhiteSpace(error.ErrorMessage)
+                            ? "Invalid value."
+                            : error.ErrorMessage)
+                        .ToArray());
+
+            return new BadRequestObjectResult(new
+            {
+                success = false,
+                message = "Validation failed",
+                errors
+            });
+        };
+    });
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -69,6 +107,27 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ClockSkew = TimeSpan.Zero,
             RoleClaimType = System.Security.Claims.ClaimTypes.Role,
             NameClaimType = System.Security.Claims.ClaimTypes.NameIdentifier
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnChallenge = async context =>
+            {
+                context.HandleResponse();
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                context.Response.ContentType = "application/json";
+
+                await context.Response.WriteAsJsonAsync(
+                    new ApiResponse<string>(false, "Authentication is required.", null));
+            },
+            OnForbidden = async context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                context.Response.ContentType = "application/json";
+
+                await context.Response.WriteAsJsonAsync(
+                    new ApiResponse<string>(false, "You are not allowed to access this resource.", null));
+            }
         };
     });
 
@@ -124,45 +183,59 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// Seed data: ensure Roles and Clinics exist
-using (var scope = app.Services.CreateScope())
+var seedOnStartup = bool.TryParse(app.Configuration["Database:SeedOnStartup"], out var shouldSeed)
+    && shouldSeed;
+
+if (seedOnStartup)
 {
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-    if (!await db.Roles.AnyAsync())
+    try
     {
-        await db.Roles.AddRangeAsync(
-            new Role { Name = "Admin", CreatedAt = DateTime.UtcNow },
-            new Role { Name = "Doctor", CreatedAt = DateTime.UtcNow },
-            new Role { Name = "Receptionist", CreatedAt = DateTime.UtcNow }
-        );
-    }
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-    if (!await db.Clinics.AnyAsync())
-    {
-        await db.Clinics.AddAsync(new Clinic
+        if (!await db.Roles.AnyAsync())
         {
-            Name = "Default Clinic",
-            Address = "123 Main St",
-            Phone = "555-0000",
-            Email = "clinic@default.com",
-            CreatedAt = DateTime.UtcNow
-        });
-    }
+            await db.Roles.AddRangeAsync(
+                new Role { Name = "Admin", CreatedAt = DateTime.UtcNow },
+                new Role { Name = "Doctor", CreatedAt = DateTime.UtcNow },
+                new Role { Name = "Receptionist", CreatedAt = DateTime.UtcNow }
+            );
+        }
 
-    db.SaveChanges();
+        if (!await db.Clinics.AnyAsync())
+        {
+            await db.Clinics.AddAsync(new Clinic
+            {
+                Name = "Default Clinic",
+                Address = "123 Main St",
+                Phone = "555-0000",
+                Email = "clinic@default.com",
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
+        await db.SaveChangesAsync();
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "Database seeding failed during startup.");
+        throw;
+    }
 }
 
-app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseMiddleware<ExceptionMiddleware>();
+app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseHttpsRedirection();
 
-app.UseSwagger();
-app.UseSwaggerUI(options =>
+if (app.Environment.IsDevelopment())
 {
-    options.SwaggerEndpoint("/swagger/v1/swagger.json", "SmartClinic API v1");
-    options.RoutePrefix = "swagger";
-});
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "SmartClinic API v1");
+        options.RoutePrefix = "swagger";
+    });
+}
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -170,3 +243,5 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+public partial class Program;

@@ -26,6 +26,9 @@ public class UserRepository : Repository<User>, IUserRepository
         return role?.Name;
     }
 
+    public async Task<Role?> GetRoleByNameAsync(string roleName)
+        => await _db.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
+
     public async Task<bool> ClinicExistsAsync(int clinicId)
         => await _db.Clinics.AnyAsync(c => c.Id == clinicId);
 

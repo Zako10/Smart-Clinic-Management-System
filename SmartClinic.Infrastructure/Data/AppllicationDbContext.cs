@@ -32,7 +32,7 @@ public class ApplicationDbContext : DbContext
             .HasOne(u => u.Clinic)
             .WithMany(c => c.Users)
             .HasForeignKey(u => u.ClinicId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.Entity<User>()
             .HasOne(u => u.Role)
@@ -44,13 +44,13 @@ public class ApplicationDbContext : DbContext
             .HasOne(p => p.Clinic)
             .WithMany(c => c.Patients)
             .HasForeignKey(p => p.ClinicId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.Entity<Doctor>()
             .HasOne(d => d.Clinic)
             .WithMany(c => c.Doctors)
             .HasForeignKey(d => d.ClinicId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.Entity<Appointment>()
             .HasOne(a => a.Patient)
@@ -68,7 +68,7 @@ public class ApplicationDbContext : DbContext
             .HasOne(a => a.Clinic)
             .WithMany(c => c.Appointments)
             .HasForeignKey(a => a.ClinicId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.Entity<MedicalRecord>()
             .HasOne(m => m.Patient)
@@ -92,7 +92,13 @@ public class ApplicationDbContext : DbContext
             .HasOne(i => i.Appointment)
             .WithOne(a => a.Invoice)
             .HasForeignKey<Invoice>(i => i.AppointmentId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<Invoice>()
+            .HasOne(i => i.Clinic)
+            .WithMany(c => c.Invoices)
+            .HasForeignKey(i => i.ClinicId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.Entity<Invoice>()
             .HasIndex(i => i.AppointmentId)
@@ -102,19 +108,19 @@ public class ApplicationDbContext : DbContext
             .HasOne(p => p.Invoice)
             .WithMany(i => i.Payments)
             .HasForeignKey(p => p.InvoiceId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.Entity<InventoryItem>()
             .HasOne(i => i.Clinic)
             .WithMany(c => c.InventoryItems)
             .HasForeignKey(i => i.ClinicId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.Entity<Subscription>()
             .HasOne(s => s.Clinic)
             .WithMany(c => c.Subscriptions)
             .HasForeignKey(s => s.ClinicId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.Entity<User>()
             .HasIndex(u => u.Email)
@@ -148,12 +154,20 @@ public class ApplicationDbContext : DbContext
             .Property(i => i.TotalAmount)
             .HasPrecision(18,2);
 
+        builder.Entity<Invoice>()
+            .Property(i => i.RowVersion)
+            .IsRowVersion();
+
         builder.Entity<Payment>()
             .Property(p => p.Amount)
             .HasPrecision(18,2);
 
         builder.Entity<InventoryItem>()
             .Property(i => i.Price)
+            .HasPrecision(18,2);
+
+        builder.Entity<Subscription>()
+            .Property(s => s.Price)
             .HasPrecision(18,2);
     }
 }

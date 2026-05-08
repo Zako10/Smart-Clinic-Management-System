@@ -15,6 +15,7 @@ public class Clinic : BaseEntity
     public ICollection<Patient> Patients { get; set; } = new List<Patient>();
     public ICollection<Doctor> Doctors { get; set; } = new List<Doctor>();
     public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
+    public ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
     public ICollection<InventoryItem> InventoryItems { get; set; } = new List<InventoryItem>();
     public ICollection<Subscription> Subscriptions { get; set; } = new List<Subscription>();
 }

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using SmartClinic.Application.Auth.Commands;
 using SmartClinic.Application.Common.Exceptions;
 using SmartClinic.Application.Common.Validation;
@@ -12,15 +13,18 @@ public class RegisterHandler
     private readonly IUserRepository _userRepo;
     private readonly IJwtService _jwtService;
     private readonly ICommandValidator<RegisterCommand> _validator;
+    private readonly ILogger<RegisterHandler> _logger;
 
     public RegisterHandler(
         IUserRepository userRepo,
         IJwtService jwtService,
-        ICommandValidator<RegisterCommand> validator)
+        ICommandValidator<RegisterCommand> validator,
+        ILogger<RegisterHandler> logger)
     {
         _userRepo = userRepo;
         _jwtService = jwtService;
         _validator = validator;
+        _logger = logger;
     }
 
     public async Task<AuthResult> Handle(RegisterCommand command)
@@ -34,12 +38,12 @@ public class RegisterHandler
             throw new ConflictException("Email already registered.");
         }
 
-        var role = await _userRepo.GetRoleNameAsync(command.RoleId);
+        var role = await _userRepo.GetRoleByNameAsync("Receptionist");
         if (role is null)
         {
             throw new AppValidationException(new Dictionary<string, string[]>
             {
-                [nameof(command.RoleId)] = ["Role does not exist."]
+                ["Role"] = ["Receptionist role does not exist."]
             });
         }
 
@@ -58,7 +62,7 @@ public class RegisterHandler
             Email = email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(command.Password),
             Phone = command.Phone.Trim(),
-            RoleId = command.RoleId,
+            RoleId = role.Id,
             ClinicId = command.ClinicId,
             Status = "Active"
         };
@@ -66,8 +70,14 @@ public class RegisterHandler
         await _userRepo.AddAsync(user);
         await _userRepo.SaveChangesAsync();
 
-        var token = _jwtService.GenerateToken(user, role);
+        _logger.LogInformation(
+            "User {UserId} registered with role {Role} in clinic {ClinicId}.",
+            user.Id,
+            role.Name,
+            user.ClinicId);
 
-        return new AuthResult(token, user.Email, $"{user.FirstName} {user.LastName}", role);
+        var token = _jwtService.GenerateToken(user, role.Name);
+
+        return new AuthResult(token, user.Email, $"{user.FirstName} {user.LastName}", role.Name);
     }
 }

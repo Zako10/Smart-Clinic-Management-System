@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartClinic.Application.Common.Pagination;
@@ -33,7 +34,7 @@ public class AppointmentController : ControllerBase
 
     [HttpGet("{id}")]
     [Authorize(Policy = "AdminOrDoctor")]
-    public async Task<IActionResult> Get(int id)
+    public async Task<IActionResult> Get([Range(1, int.MaxValue)] int id)
     {
         var appointment = await _service.GetById(id);
         if (appointment == null)
@@ -57,7 +58,7 @@ public class AppointmentController : ControllerBase
 
     [HttpPut("{id}")]
     [Authorize(Policy = "AdminOrDoctor")]
-    public async Task<IActionResult> Update(int id, CreateAppointmentDto dto)
+    public async Task<IActionResult> Update([Range(1, int.MaxValue)] int id, CreateAppointmentDto dto)
     {
         if (!ModelState.IsValid)
             return BadRequest(new ApiResponse<string>(
@@ -73,7 +74,7 @@ public class AppointmentController : ControllerBase
 
     [HttpDelete("{id}")]
     [Authorize(Policy = "AdminOnly")]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete([Range(1, int.MaxValue)] int id)
     {
         var existing = await _service.GetById(id);
         if (existing == null)

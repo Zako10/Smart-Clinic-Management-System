@@ -14,7 +14,11 @@ public class Invoice : BaseEntity
     
     public int ClinicId { get; set; }
 
+    public byte[] RowVersion { get; set; } = [];
+
     public Appointment Appointment { get; set; } = null!;
+
+    public Clinic Clinic { get; set; } = null!;
 
     public ICollection<Payment> Payments { get; set; } = new List<Payment>();
 }

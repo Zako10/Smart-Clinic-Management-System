@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartClinic.Application.DTOs.Clinic;
@@ -33,7 +34,7 @@ public class ClinicController : ControllerBase
 
     [HttpGet("{id}")]
     [Authorize(Policy = "AdminOnly")]
-    public async Task<IActionResult> Get(int id)
+    public async Task<IActionResult> Get([Range(1, int.MaxValue)] int id)
     {
         var clinic = await _service.GetById(id);
 
@@ -77,7 +78,7 @@ public class ClinicController : ControllerBase
 
     [HttpPut("{id}")]
     [Authorize(Policy = "AdminOnly")]
-    public async Task<IActionResult> Update(int id, CreateClinicDto dto)
+    public async Task<IActionResult> Update([Range(1, int.MaxValue)] int id, CreateClinicDto dto)
     {
         if (!ModelState.IsValid)
         {
@@ -110,7 +111,7 @@ public class ClinicController : ControllerBase
 
     [HttpDelete("{id}")]
     [Authorize(Policy = "AdminOnly")]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete([Range(1, int.MaxValue)] int id)
     {
         var existing = await _service.GetById(id);
 

@@ -26,11 +26,10 @@ public class AuthController : ControllerBase
     {
         var result = await _registerHandler.Handle(command);
 
-        return Ok(new ApiResponse<object>(
+        return StatusCode(StatusCodes.Status201Created, new ApiResponse<object>(
             true,
             "User registered successfully",
-            result
-        ));
+            result));
     }
 
     [HttpPost("login")]

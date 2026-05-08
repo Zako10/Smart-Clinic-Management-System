@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using SmartClinic.Application.Auth.Commands;
 using SmartClinic.Application.Common.Exceptions;
 using SmartClinic.Application.Common.Validation;
@@ -24,49 +23,16 @@ public class RegisterCommandValidator : ICommandValidator<RegisterCommand>
 
         if (string.IsNullOrWhiteSpace(command.Password))
             errors[nameof(command.Password)] = ["Password is required."];
-        else if (command.Password.Length < 6)
-            errors[nameof(command.Password)] = ["Password must be at least 6 characters."];
+        else if (command.Password.Length < 8)
+            errors[nameof(command.Password)] = ["Password must be at least 8 characters."];
 
         if (string.IsNullOrWhiteSpace(command.Phone))
             errors[nameof(command.Phone)] = ["Phone is required."];
-
-        if (command.RoleId <= 0)
-            errors[nameof(command.RoleId)] = ["RoleId must be greater than 0."];
 
         if (command.ClinicId <= 0)
             errors[nameof(command.ClinicId)] = ["ClinicId must be greater than 0."];
 
         if (errors.Count > 0)
             throw new AppValidationException(errors);
-    }
-
-    private static void AddRequired(Dictionary<string, List<string>> errors, string field, string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            Add(errors, field, $"{field} is required.");
-        }
-    }
-
-    private static void Add(Dictionary<string, List<string>> errors, string field, string error)
-    {
-        if (!errors.TryGetValue(field, out var fieldErrors))
-        {
-            fieldErrors = [];
-            errors[field] = fieldErrors;
-        }
-
-        fieldErrors.Add(error);
-    }
-
-    private static void ThrowIfInvalid(Dictionary<string, List<string>> errors)
-    {
-        if (errors.Count == 0)
-        {
-            return;
-        }
-
-        throw new AppValidationException(
-            errors.ToDictionary(error => error.Key, error => error.Value.ToArray()));
     }
 }

@@ -1,5 +1,4 @@
 using SmartClinic.Application.DTOs.Invoice;
-using SmartClinic.Domain.Entities;
 
 namespace SmartClinic.Application.Interfaces;
 

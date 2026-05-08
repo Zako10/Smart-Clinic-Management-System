@@ -25,6 +25,9 @@ public class JwtService : IJwtService
             ?? throw new InvalidOperationException("Jwt:Issuer is missing.");
         var jwtAudience = _config["Jwt:Audience"]
             ?? throw new InvalidOperationException("Jwt:Audience is missing.");
+        var expiresInDays = int.TryParse(_config["Jwt:ExpiresInDays"], out var configuredDays)
+            ? configuredDays
+            : 1;
 
         if (Encoding.UTF8.GetByteCount(jwtKey) < 32)
         {
@@ -47,7 +50,7 @@ public class JwtService : IJwtService
             issuer: jwtIssuer,
             audience: jwtAudience,
             claims: claims,
-            expires: DateTime.UtcNow.AddDays(7),
+            expires: DateTime.UtcNow.AddDays(expiresInDays),
             signingCredentials: creds
         );
 

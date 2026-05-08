@@ -24,7 +24,7 @@ public class PaymentController : ControllerBase
     {
         await _service.Add(dto);
 
-        return Ok(new ApiResponse<string>(
+        return StatusCode(StatusCodes.Status201Created, new ApiResponse<string>(
             true, "Payment created successfully", null));
     }
 }

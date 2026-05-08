@@ -5,5 +5,4 @@ namespace SmartClinic.Application.Interfaces;
 public interface IPaymentService
 {
     Task Add(CreatePaymentDto dto);
-    // Additional methods can be added later
 }

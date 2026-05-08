@@ -8,13 +8,19 @@ public class CreateAppointmentDto
 {
     [Required]
     public DateTime DateTime { get; set; }
-    [Required]
+
+    [Range(1, int.MaxValue)]
     public int PatientId { get; set; }
-    [Required]
+
+    [Range(1, int.MaxValue)]
     public int DoctorId { get; set; }
-    [Required]
-    
+
+    [Range(1, int.MaxValue)]
     public int ClinicId { get; set; }
+
+    [EnumDataType(typeof(AppointmentStatus))]
     public AppointmentStatus Status { get; set; } = AppointmentStatus.Scheduled;
+
+    [MaxLength(250)]
     public string Notes { get; set; } = string.Empty;
 }
