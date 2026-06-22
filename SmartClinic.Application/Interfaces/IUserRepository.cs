@@ -8,6 +8,7 @@ public interface IUserRepository
     Task<bool> ExistsByEmailAsync(string email);
     Task<string?> GetRoleNameAsync(int roleId);
     Task<Role?> GetRoleByNameAsync(string roleName);
+    Task<int?> GetDefaultClinicIdAsync();
     Task<bool> ClinicExistsAsync(int clinicId);
     Task AddAsync(User user);
     Task SaveChangesAsync();

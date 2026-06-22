@@ -29,9 +29,6 @@ public class RegisterCommandValidator : ICommandValidator<RegisterCommand>
         if (string.IsNullOrWhiteSpace(command.Phone))
             errors[nameof(command.Phone)] = ["Phone is required."];
 
-        if (command.ClinicId <= 0)
-            errors[nameof(command.ClinicId)] = ["ClinicId must be greater than 0."];
-
         if (errors.Count > 0)
             throw new AppValidationException(errors);
     }

@@ -21,6 +21,7 @@ using SmartClinic.Infrastructure.Repositories;
 using SmartClinic.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+const string FrontendCorsPolicy = "Frontend";
 
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
@@ -80,6 +81,29 @@ builder.Services.AddControllers()
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(FrontendCorsPolicy, policy =>
+    {
+        var origins = builder.Configuration
+            .GetSection("Cors:AllowedOrigins")
+            .Get<string[]>() ?? [];
+
+        if (origins.Length == 0)
+        {
+            policy
+                .WithOrigins("http://localhost:5173", "http://127.0.0.1:5173")
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+            return;
+        }
+
+        policy
+            .WithOrigins(origins)
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddAutoMapper(_ => { }, typeof(MappingProfile).Assembly);
 
@@ -193,13 +217,14 @@ if (seedOnStartup)
         using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        if (!await db.Roles.AnyAsync())
+        var roleNames = await db.Roles.Select(role => role.Name).ToListAsync();
+        var missingRoles = new[] { "Admin", "Doctor", "Receptionist" }
+            .Except(roleNames)
+            .Select(role => new Role { Name = role, CreatedAt = DateTime.UtcNow });
+
+        if (missingRoles.Any())
         {
-            await db.Roles.AddRangeAsync(
-                new Role { Name = "Admin", CreatedAt = DateTime.UtcNow },
-                new Role { Name = "Doctor", CreatedAt = DateTime.UtcNow },
-                new Role { Name = "Receptionist", CreatedAt = DateTime.UtcNow }
-            );
+            await db.Roles.AddRangeAsync(missingRoles);
         }
 
         if (!await db.Clinics.AnyAsync())
@@ -226,6 +251,7 @@ if (seedOnStartup)
 app.UseMiddleware<ExceptionMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseHttpsRedirection();
+app.UseCors(FrontendCorsPolicy);
 
 if (app.Environment.IsDevelopment())
 {
@@ -239,6 +265,14 @@ if (app.Environment.IsDevelopment())
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapGet("/api/health", () => Results.Ok(new
+{
+    success = true,
+    message = "SmartClinic API is online",
+    environment = app.Environment.EnvironmentName,
+    timestamp = DateTimeOffset.UtcNow
+})).AllowAnonymous();
 
 app.MapControllers();
 

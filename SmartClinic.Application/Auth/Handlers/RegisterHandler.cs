@@ -47,11 +47,15 @@ public class RegisterHandler
             });
         }
 
-        if (!await _userRepo.ClinicExistsAsync(command.ClinicId))
+        var clinicId = command.ClinicId > 0
+            ? command.ClinicId
+            : await _userRepo.GetDefaultClinicIdAsync();
+
+        if (clinicId is null || !await _userRepo.ClinicExistsAsync(clinicId.Value))
         {
             throw new AppValidationException(new Dictionary<string, string[]>
             {
-                [nameof(command.ClinicId)] = ["Clinic does not exist."]
+                ["Clinic"] = ["No clinic is ready yet. Please restart the server and try again."]
             });
         }
 
@@ -63,7 +67,7 @@ public class RegisterHandler
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(command.Password),
             Phone = command.Phone.Trim(),
             RoleId = role.Id,
-            ClinicId = command.ClinicId,
+            ClinicId = clinicId.Value,
             Status = "Active"
         };
 

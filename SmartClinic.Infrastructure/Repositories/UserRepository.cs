@@ -29,6 +29,12 @@ public class UserRepository : Repository<User>, IUserRepository
     public async Task<Role?> GetRoleByNameAsync(string roleName)
         => await _db.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
 
+    public async Task<int?> GetDefaultClinicIdAsync()
+        => await _db.Clinics
+            .OrderBy(c => c.Id)
+            .Select(c => (int?)c.Id)
+            .FirstOrDefaultAsync();
+
     public async Task<bool> ClinicExistsAsync(int clinicId)
         => await _db.Clinics.AnyAsync(c => c.Id == clinicId);
 

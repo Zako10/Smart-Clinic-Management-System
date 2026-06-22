@@ -6,5 +6,5 @@ public record RegisterCommand(
     string Email,
     string Password,
     string Phone,
-    int ClinicId
+    int ClinicId = 0
 );
