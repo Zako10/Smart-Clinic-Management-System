@@ -192,7 +192,9 @@ public class ApiSmokeTests
 
     private static WebApplicationFactory<Program> CreateFactory()
     {
-        var databaseName = $"SmartClinicTests-{Guid.NewGuid()}";
+        var databaseName = $"SmartClinicTests_{Guid.NewGuid():N}";
+        var connectionString =
+            $@"Server=(localdb)\MSSQLLocalDB;Database={databaseName};Trusted_Connection=True;Encrypt=False;";
 
         return new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
@@ -205,7 +207,7 @@ public class ApiSmokeTests
                 services.RemoveAll<IApplicationDbTransaction>();
 
                 services.AddDbContext<ApplicationDbContext>(options =>
-                    options.UseInMemoryDatabase(databaseName));
+                    options.UseSqlServer(connectionString));
                 services.AddScoped<IApplicationDbTransaction, ImmediateTransaction>();
 
                 using var provider = services.BuildServiceProvider();
@@ -221,13 +223,12 @@ public class ApiSmokeTests
         db.Database.EnsureCreated();
 
         db.Roles.AddRange(
-            new Role { Id = 1, Name = "Admin", CreatedAt = DateTime.UtcNow },
-            new Role { Id = 2, Name = "Doctor", CreatedAt = DateTime.UtcNow },
-            new Role { Id = 3, Name = "Receptionist", CreatedAt = DateTime.UtcNow });
+            new Role { Name = "Admin", CreatedAt = DateTime.UtcNow },
+            new Role { Name = "Doctor", CreatedAt = DateTime.UtcNow },
+            new Role { Name = "Receptionist", CreatedAt = DateTime.UtcNow });
 
         db.Clinics.Add(new Clinic
         {
-            Id = 1,
             Name = "Default Clinic",
             Address = "123 Main St",
             Phone = "555-0000",
@@ -238,7 +239,6 @@ public class ApiSmokeTests
         db.Users.AddRange(
             new User
             {
-                Id = 1,
                 FirstName = "Admin",
                 LastName = "User",
                 Email = "admin@example.com",
@@ -251,7 +251,6 @@ public class ApiSmokeTests
             },
             new User
             {
-                Id = 2,
                 FirstName = "Reception",
                 LastName = "User",
                 Email = "reception@example.com",
