@@ -38,12 +38,13 @@ public class RegisterHandler
             throw new ConflictException("Email already registered.");
         }
 
-        var role = await _userRepo.GetRoleByNameAsync("Receptionist");
+        var selectedRole = NormalizeRole(command.Role);
+        var role = await _userRepo.GetRoleByNameAsync(selectedRole);
         if (role is null)
         {
             throw new AppValidationException(new Dictionary<string, string[]>
             {
-                ["Role"] = ["Receptionist role does not exist."]
+                ["Role"] = [$"{selectedRole} role does not exist."]
             });
         }
 
@@ -83,5 +84,15 @@ public class RegisterHandler
         var token = _jwtService.GenerateToken(user, role.Name);
 
         return new AuthResult(token, user.Email, $"{user.FirstName} {user.LastName}", role.Name);
+    }
+
+    private static string NormalizeRole(string role)
+    {
+        return role.Trim().ToLowerInvariant() switch
+        {
+            "admin" => "Admin",
+            "doctor" => "Doctor",
+            _ => "Receptionist"
+        };
     }
 }

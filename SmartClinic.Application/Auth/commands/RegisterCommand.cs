@@ -6,5 +6,6 @@ public record RegisterCommand(
     string Email,
     string Password,
     string Phone,
-    int ClinicId = 0
+    int ClinicId = 0,
+    string Role = "Receptionist"
 );

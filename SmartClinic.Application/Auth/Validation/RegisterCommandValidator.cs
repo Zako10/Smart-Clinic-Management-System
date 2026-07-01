@@ -29,6 +29,16 @@ public class RegisterCommandValidator : ICommandValidator<RegisterCommand>
         if (string.IsNullOrWhiteSpace(command.Phone))
             errors[nameof(command.Phone)] = ["Phone is required."];
 
+        var allowedRoles = new[] { "Admin", "Doctor", "Receptionist" };
+        if (string.IsNullOrWhiteSpace(command.Role))
+        {
+            errors[nameof(command.Role)] = ["Account type is required."];
+        }
+        else if (!allowedRoles.Contains(command.Role.Trim(), StringComparer.OrdinalIgnoreCase))
+        {
+            errors[nameof(command.Role)] = ["Choose Admin, Doctor, or Receptionist."];
+        }
+
         if (errors.Count > 0)
             throw new AppValidationException(errors);
     }

@@ -22,7 +22,7 @@ export function ProtectedRoute({ roles }: { roles?: Role[] }) {
   const currentRole = me.data?.role ?? user?.role
   if (roles && currentRole && !roles.includes(currentRole)) return <Navigate to="/forbidden" replace />
   if (roles && !currentRole && me.isLoading) {
-    return <div className="grid min-h-screen place-items-center text-sm text-[rgb(var(--muted-foreground))]">Restoring secure session...</div>
+    return <div className="grid min-h-screen place-items-center text-sm text-[rgb(var(--muted-foreground))]">Opening your account...</div>
   }
   return <Outlet />
 }

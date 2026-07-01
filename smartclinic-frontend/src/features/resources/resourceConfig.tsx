@@ -55,7 +55,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
   clinics: {
     key: 'clinics',
     title: 'Clinics',
-    description: 'Manage branches, contact details, and operating locations.',
+    description: 'Add and update clinic branches and contact details.',
     endpoint: '/Clinic',
     icon: Building2,
     roles: ['Admin'],
@@ -89,7 +89,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
   doctors: {
     key: 'doctors',
     title: 'Doctors',
-    description: 'Credentialed care team directory by specialty and clinic.',
+    description: 'See doctors, specialties, and clinic contact numbers.',
     endpoint: '/Doctor',
     icon: Stethoscope,
     roles: ['Admin', 'Doctor'],
@@ -123,7 +123,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
       { name: 'lastName', label: 'Last name' },
       { name: 'specialty', label: 'Specialty' },
       { name: 'phone', label: 'Phone', type: 'tel' },
-      { name: 'clinicId', label: 'Clinic ID', type: 'number' },
+      { name: 'clinicId', label: 'Clinic number', type: 'number' },
     ],
     defaults: { firstName: '', lastName: '', specialty: '', phone: '', clinicId: 1 },
     toPayload: (values) => ({ ...values, clinicId: Number(values.clinicId) }),
@@ -131,7 +131,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
   patients: {
     key: 'patients',
     title: 'Patients',
-    description: 'Patient registry for reception and administration workflows.',
+    description: 'Add patients and keep their contact details ready.',
     endpoint: '/Patient',
     icon: UsersRound,
     roles: ['Admin', 'Receptionist'],
@@ -144,7 +144,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
     columns: [
       { label: 'Patient', render: (patient: Patient) => <span className="font-medium">{patient.fullName}</span> },
       { label: 'Phone', render: (patient: Patient) => patient.phone },
-      { label: 'Patient ID', render: (patient: Patient) => `#${patient.id}` },
+      { label: 'Patient number', render: (patient: Patient) => `#${patient.id}` },
     ],
     schema: z.object({
       firstName: requiredText.max(100),
@@ -156,15 +156,15 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
       { name: 'firstName', label: 'First name' },
       { name: 'lastName', label: 'Last name' },
       { name: 'phone', label: 'Phone', type: 'tel' },
-      { name: 'clinicId', label: 'Clinic ID', type: 'number' },
+      { name: 'clinicId', label: 'Clinic number', type: 'number' },
     ],
     defaults: { firstName: '', lastName: '', phone: '', clinicId: 1 },
     toPayload: (values) => ({ ...values, clinicId: Number(values.clinicId) }),
   },
   appointments: {
     key: 'appointments',
-    title: 'Appointments',
-    description: 'Clinical schedule with status tracking and visit notes.',
+    title: 'Visits',
+    description: 'Plan patient visits and follow their current status.',
     endpoint: '/Appointment',
     icon: CalendarClock,
     roles: ['Admin', 'Doctor'],
@@ -207,9 +207,9 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
     }),
     fields: [
       { name: 'dateTime', label: 'Date and time', type: 'datetime-local' },
-      { name: 'patientId', label: 'Patient ID', type: 'number' },
-      { name: 'doctorId', label: 'Doctor ID', type: 'number' },
-      { name: 'clinicId', label: 'Clinic ID', type: 'number' },
+      { name: 'patientId', label: 'Patient number', type: 'number' },
+      { name: 'doctorId', label: 'Doctor number', type: 'number' },
+      { name: 'clinicId', label: 'Clinic number', type: 'number' },
       {
         name: 'status',
         label: 'Status',
@@ -233,8 +233,8 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
   },
   invoices: {
     key: 'invoices',
-    title: 'Invoices',
-    description: 'Billing records, outstanding balances, and invoice states.',
+    title: 'Bills',
+    description: 'Track clinic bills, amounts, and payment status.',
     endpoint: '/Invoice',
     icon: FileText,
     roles: ['Admin', 'Receptionist'],
@@ -245,8 +245,8 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
     paginated: false,
     searchable: (invoice: Invoice) => `${invoice.appointmentId} ${invoice.totalAmount} ${invoice.status}`,
     columns: [
-      { label: 'Invoice', render: (invoice: Invoice) => <span className="font-medium">#{invoice.id}</span> },
-      { label: 'Appointment', render: (invoice: Invoice) => `#${invoice.appointmentId}` },
+      { label: 'Bill', render: (invoice: Invoice) => <span className="font-medium">#{invoice.id}</span> },
+      { label: 'Visit', render: (invoice: Invoice) => `#${invoice.appointmentId}` },
       { label: 'Amount', render: (invoice: Invoice) => currency.format(invoice.totalAmount) },
       {
         label: 'Status',
@@ -259,7 +259,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
     ],
     schema: z.object({ appointmentId: positiveNumber, totalAmount: amount }),
     fields: [
-      { name: 'appointmentId', label: 'Appointment ID', type: 'number' },
+      { name: 'appointmentId', label: 'Visit number', type: 'number' },
       { name: 'totalAmount', label: 'Total amount', type: 'number' },
     ],
     defaults: { appointmentId: 1, totalAmount: 100 },
@@ -271,7 +271,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
   payments: {
     key: 'payments',
     title: 'Payments',
-    description: 'Record payments against invoices using available backend contract.',
+    description: 'Record money paid for clinic bills.',
     endpoint: '/Payment',
     icon: CreditCard,
     roles: ['Admin', 'Receptionist'],
@@ -282,10 +282,10 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
     paginated: false,
     searchable: (invoice: Invoice) => `${invoice.id} ${invoice.status} ${invoice.totalAmount}`,
     columns: [
-      { label: 'Invoice', render: (invoice: Invoice) => <span className="font-medium">#{invoice.id}</span> },
-      { label: 'Outstanding context', render: (invoice: Invoice) => currency.format(invoice.totalAmount) },
+      { label: 'Bill', render: (invoice: Invoice) => <span className="font-medium">#{invoice.id}</span> },
+      { label: 'Bill amount', render: (invoice: Invoice) => currency.format(invoice.totalAmount) },
       { label: 'Status', render: (invoice: Invoice) => <Badge>{invoice.status}</Badge> },
-      { label: 'Action', render: () => <span className="text-[rgb(var(--muted-foreground))]">Create payment</span> },
+      { label: 'Next step', render: () => <span className="text-[rgb(var(--muted-foreground))]">Add payment</span> },
     ],
     schema: z.object({
       invoiceId: positiveNumber,
@@ -293,7 +293,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
       method: z.coerce.number().int().min(0).max(1),
     }),
     fields: [
-      { name: 'invoiceId', label: 'Invoice ID', type: 'number' },
+      { name: 'invoiceId', label: 'Bill number', type: 'number' },
       { name: 'amount', label: 'Amount', type: 'number' },
       {
         name: 'method',
@@ -318,6 +318,6 @@ export const metricCards = [
   { key: 'clinics', label: 'Clinics', icon: Building2 },
   { key: 'doctors', label: 'Doctors', icon: Stethoscope },
   { key: 'patients', label: 'Patients', icon: UsersRound },
-  { key: 'appointments', label: 'Appointments', icon: CalendarClock },
-  { key: 'invoices', label: 'Invoices', icon: Banknote },
+  { key: 'appointments', label: 'Visits', icon: CalendarClock },
+  { key: 'invoices', label: 'Bills', icon: Banknote },
 ] as const

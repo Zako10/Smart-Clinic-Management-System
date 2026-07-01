@@ -108,7 +108,7 @@ export function ResourceForm<T extends { id: number }>({
           Cancel
         </Button>
         <Button type="submit" disabled={pending}>
-          {pending ? 'Saving...' : item ? 'Save changes' : 'Create'}
+          {pending ? 'Please wait...' : item ? 'Save changes' : 'Save'}
         </Button>
       </div>
     </form>

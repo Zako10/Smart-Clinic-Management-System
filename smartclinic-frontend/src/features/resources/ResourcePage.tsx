@@ -108,22 +108,22 @@ export function ResourcePage<T extends Identifiable>({ config }: { config: Resou
             }}
           >
             <Plus className="size-4" />
-            New {config.key === 'payments' ? 'payment' : config.title.slice(0, -1)}
+            Add {config.key === 'payments' ? 'payment' : config.title.slice(0, -1)}
           </Button>
         ) : null}
       </div>
 
       <Card>
         <CardHeader
-          title="Records"
-          description={`${filtered.length} visible ${filtered.length === 1 ? 'record' : 'records'}`}
+          title="List"
+          description={`${filtered.length} ${filtered.length === 1 ? 'item' : 'items'} shown`}
           action={
             <div className="relative w-full sm:w-72">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[rgb(var(--muted-foreground))]" />
               <Input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search records..."
+                placeholder="Search here..."
                 className="pl-9"
               />
             </div>
@@ -134,13 +134,13 @@ export function ResourcePage<T extends Identifiable>({ config }: { config: Resou
         {query.isError ? <ErrorState message={getApiMessage(query.error)} onRetry={() => query.refetch()} /> : null}
         {!query.isLoading && !query.isError && filtered.length === 0 ? (
           <EmptyState
-            title="No records found"
-            description="Create a record or adjust the current filters to see data here."
+            title="Nothing here yet"
+            description="Add a new item or change your search to see results."
             action={
               canCreate ? (
                 <Button onClick={() => setIsFormOpen(true)}>
                   <Plus className="size-4" />
-                  Create first record
+                  Add first item
                 </Button>
               ) : null
             }
@@ -156,7 +156,7 @@ export function ResourcePage<T extends Identifiable>({ config }: { config: Resou
                       {column.label}
                     </th>
                   ))}
-                  {(canUpdate || canDelete) && <th className="px-4 py-3 text-right font-semibold">Actions</th>}
+                  {(canUpdate || canDelete) && <th className="px-4 py-3 text-right font-semibold">Options</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-[rgb(var(--border))]">
@@ -228,7 +228,7 @@ export function ResourcePage<T extends Identifiable>({ config }: { config: Resou
       <Dialog
         open={isFormOpen}
         title={editing ? `Edit ${config.title}` : `New ${config.title}`}
-        description="Fields are validated before the request is sent to the API."
+        description="Fill in the details below, then save."
         onClose={() => setIsFormOpen(false)}
       >
         <ResourceForm
@@ -242,8 +242,8 @@ export function ResourcePage<T extends Identifiable>({ config }: { config: Resou
 
       <ConfirmDialog
         open={Boolean(deleting)}
-        title="Delete record"
-        description="This action cannot be undone."
+        title="Delete item"
+        description="This will remove it permanently."
         pending={deleteMutation.isPending}
         onCancel={() => setDeleting(null)}
         onConfirm={() => deleting && deleteMutation.mutate(deleting)}

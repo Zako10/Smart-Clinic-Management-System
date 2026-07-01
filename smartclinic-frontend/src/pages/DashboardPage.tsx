@@ -40,12 +40,12 @@ export function DashboardPage() {
     <div className="grid gap-6">
       <section className="grid gap-4 lg:grid-cols-[1fr_22rem]">
         <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-6 shadow-sm">
-          <Badge tone="success">Secure session active</Badge>
+          <Badge tone="success">You are signed in</Badge>
           <h1 className="mt-4 max-w-2xl text-3xl font-semibold tracking-tight">
-            Good day, {user?.fullName ?? user?.role}. Your clinic workspace is ready.
+            Good day, {user?.fullName ?? user?.role}. Your clinic is ready.
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-[rgb(var(--muted-foreground))]">
-            Monitor patient flow, clinical schedules, billing status, and operational records from one role-aware dashboard.
+            Follow patients, visits, bills, and payments from one clear place.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             {visibleResources.slice(0, 3).map((resource) => (
@@ -64,22 +64,22 @@ export function DashboardPage() {
               <ShieldCheck className="size-5" />
             </div>
             <div>
-              <p className="font-semibold">Role policy</p>
-              <p className="text-sm text-[rgb(var(--muted-foreground))]">{user?.role} access</p>
+              <p className="font-semibold">Your account</p>
+              <p className="text-sm text-[rgb(var(--muted-foreground))]">{user?.role}</p>
             </div>
           </div>
           <div className="mt-5 grid gap-3 text-sm">
             <div className="flex justify-between">
-              <span className="text-[rgb(var(--muted-foreground))]">Clinic scope</span>
+              <span className="text-[rgb(var(--muted-foreground))]">Clinic number</span>
               <span>#{user?.clinicId ?? 0}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[rgb(var(--muted-foreground))]">Available modules</span>
+              <span className="text-[rgb(var(--muted-foreground))]">Pages you can use</span>
               <span>{visibleResources.length}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[rgb(var(--muted-foreground))]">Session</span>
-              <span>JWT</span>
+              <span className="text-[rgb(var(--muted-foreground))]">Status</span>
+              <span>Active</span>
             </div>
           </div>
         </Card>
@@ -95,7 +95,7 @@ export function DashboardPage() {
                 <div className="grid size-9 place-items-center rounded-lg bg-[rgb(var(--muted))]">
                   <Icon className="size-4 text-[rgb(var(--muted-foreground))]" />
                 </div>
-                {queries[index].isError ? <Badge tone="danger">Restricted</Badge> : <Badge tone="neutral">Live</Badge>}
+                {queries[index].isError ? <Badge tone="danger">Not available</Badge> : <Badge tone="neutral">Ready</Badge>}
               </div>
               <p className="mt-4 text-2xl font-semibold">{queries[index].isLoading ? '...' : countFromData(data)}</p>
               <p className="text-sm text-[rgb(var(--muted-foreground))]">{metric.label}</p>
@@ -106,10 +106,10 @@ export function DashboardPage() {
 
       <section className="grid gap-6 lg:grid-cols-[1fr_24rem]">
         <Card>
-          <CardHeader title="Upcoming appointments" description="Latest schedule entries available to your role" />
+          <CardHeader title="Upcoming visits" description="The latest visits you can see" />
           <div className="divide-y divide-[rgb(var(--border))]">
             {appointmentList.length === 0 ? (
-              <div className="p-6 text-sm text-[rgb(var(--muted-foreground))]">No appointments available.</div>
+              <div className="p-6 text-sm text-[rgb(var(--muted-foreground))]">No visits yet.</div>
             ) : (
               appointmentList.map((appointment) => (
                 <div key={appointment.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -118,7 +118,7 @@ export function DashboardPage() {
                       <Clock3 className="size-4 text-[rgb(var(--primary))]" />
                     </div>
                     <div>
-                      <p className="font-medium">Appointment #{appointment.id}</p>
+                      <p className="font-medium">Visit #{appointment.id}</p>
                       <p className="text-sm text-[rgb(var(--muted-foreground))]">
                         Patient #{appointment.patientId} with Doctor #{appointment.doctorId}
                       </p>
@@ -137,7 +137,7 @@ export function DashboardPage() {
         </Card>
 
         <Card>
-          <CardHeader title="Revenue snapshot" description="Invoice totals from billing records" />
+          <CardHeader title="Money summary" description="Total amount from clinic bills" />
           <div className="p-5">
             <div className="flex items-center gap-3">
               <div className="grid size-12 place-items-center rounded-lg bg-teal-500/10 text-teal-500">
@@ -145,17 +145,17 @@ export function DashboardPage() {
               </div>
               <div>
                 <p className="text-2xl font-semibold">{currency.format(totalRevenue)}</p>
-                <p className="text-sm text-[rgb(var(--muted-foreground))]">Total invoiced</p>
+                <p className="text-sm text-[rgb(var(--muted-foreground))]">Total bills</p>
               </div>
             </div>
             <div className="mt-6 grid gap-3">
               {invoiceList.slice(0, 4).map((invoice) => (
                 <div key={invoice.id} className="flex items-center justify-between rounded-md bg-[rgb(var(--muted))] px-3 py-2 text-sm">
-                  <span>Invoice #{invoice.id}</span>
+                  <span>Bill #{invoice.id}</span>
                   <span className="font-medium">{currency.format(invoice.totalAmount)}</span>
                 </div>
               ))}
-              {invoiceList.length === 0 ? <p className="text-sm text-[rgb(var(--muted-foreground))]">No invoices available.</p> : null}
+              {invoiceList.length === 0 ? <p className="text-sm text-[rgb(var(--muted-foreground))]">No bills yet.</p> : null}
             </div>
           </div>
         </Card>

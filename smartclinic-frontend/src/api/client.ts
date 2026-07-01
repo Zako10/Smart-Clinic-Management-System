@@ -51,25 +51,25 @@ export function getApiMessage(error: unknown, fallback = 'Something went wrong')
 function friendlyMessage(message: string, status?: number) {
   const normalized = message.toLowerCase()
   if (normalized.includes('email already registered')) {
-    return 'This email is already registered. Please sign in or use a different email.'
+    return 'This email is already used. Sign in or try another email.'
   }
   if (normalized.includes('no clinic is ready')) {
-    return 'No clinic is available yet. Ask an admin to create a clinic first.'
+    return 'No clinic is ready yet. Please use clinic number 1 or ask the manager.'
   }
   if (normalized.includes('authentication is required')) {
-    return 'Your session expired. Please sign in again.'
+    return 'Please sign in again.'
   }
   if (normalized.includes('not allowed') || status === 403) {
-    return 'You do not have permission to perform this action.'
+    return 'This page is not available for your account.'
   }
   if (status === 409) {
-    return message || 'This record conflicts with existing data.'
+    return message || 'This item already exists or cannot be saved this way.'
   }
   if (status === 400) {
-    return message || 'Please check the form and try again.'
+    return message || 'Please check what you entered and try again.'
   }
   if (status && status >= 500) {
-    return 'The server could not complete the request. Please try again.'
+    return 'Something went wrong. Please try again.'
   }
   return message
 }

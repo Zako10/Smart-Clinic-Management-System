@@ -8,7 +8,7 @@ import { cn } from '../utils/cn'
 import { initials } from '../utils/format'
 
 const navItems = [
-  { label: 'Dashboard', to: '/dashboard', roles: ['Admin', 'Doctor', 'Receptionist'] as const },
+  { label: 'Home', to: '/dashboard', roles: ['Admin', 'Doctor', 'Receptionist'] as const },
   ...Object.values(resourceConfigs).map((config) => ({
     label: config.title,
     to: `/${config.key}`,
@@ -40,7 +40,7 @@ export function AppLayout() {
           </div>
           <div>
             <p className="font-semibold">Smart Clinic</p>
-            <p className="text-xs text-[rgb(var(--muted-foreground))]">{user?.role ?? 'Workspace'}</p>
+            <p className="text-xs text-[rgb(var(--muted-foreground))]">{user?.role ?? 'Clinic'}</p>
           </div>
         </div>
         <Button className="lg:hidden" variant="ghost" size="icon" onClick={() => setSidebarOpen(false)}>
@@ -100,11 +100,11 @@ export function AppLayout() {
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[rgb(var(--muted-foreground))]" />
             <input
               className="h-10 w-full max-w-xl rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--card))] pl-9 pr-3 text-sm outline-none"
-              placeholder="Search records inside each module"
+              placeholder="Search in your clinic work"
               readOnly
             />
           </div>
-          <Button variant="secondary" size="icon" onClick={() => setDark((value) => !value)} aria-label="Toggle theme">
+          <Button variant="secondary" size="icon" onClick={() => setDark((value) => !value)} aria-label="Change colors">
             {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
           </Button>
           <Button
@@ -115,7 +115,7 @@ export function AppLayout() {
             }}
           >
             <LogOut className="size-4" />
-            <span className="hidden sm:inline">Logout</span>
+            <span className="hidden sm:inline">Sign out</span>
           </Button>
         </header>
         <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">

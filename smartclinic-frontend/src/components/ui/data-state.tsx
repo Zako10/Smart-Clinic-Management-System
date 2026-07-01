@@ -26,11 +26,11 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
   return (
     <div className="grid place-items-center px-6 py-16 text-center">
       <AlertCircle className="size-8 text-red-500" />
-      <h3 className="mt-4 font-semibold">Unable to load data</h3>
+      <h3 className="mt-4 font-semibold">Could not show this page</h3>
       <p className="mt-1 max-w-md text-sm text-[rgb(var(--muted-foreground))]">{message}</p>
       {onRetry ? (
         <Button className="mt-5" variant="secondary" onClick={onRetry}>
-          Retry
+          Try again
         </Button>
       ) : null}
     </div>

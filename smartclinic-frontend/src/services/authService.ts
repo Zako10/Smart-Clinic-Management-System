@@ -1,5 +1,6 @@
 import { apiClient } from '../api/client'
 import type { ApiResponse, AuthResult, CurrentUser } from '../types/api'
+import type { Role } from '../types/api'
 
 export type LoginPayload = {
   email: string
@@ -13,6 +14,7 @@ export type RegisterPayload = {
   password: string
   phone: string
   clinicId: number
+  role: Role
 }
 
 export const authService = {

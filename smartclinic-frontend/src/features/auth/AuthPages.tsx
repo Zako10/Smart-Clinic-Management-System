@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
-import { Activity, ArrowRight, LockKeyhole, Mail, Phone, UserRound } from 'lucide-react'
-import { useEffect } from 'react'
+import { Activity, ArrowRight, LockKeyhole, Mail, Phone, ShieldCheck, Stethoscope, UserRound, UsersRound } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
@@ -12,6 +12,7 @@ import { Field, Input } from '../../components/ui/input'
 import { useToast } from '../../hooks/useToast'
 import { authService } from '../../services/authService'
 import { useAuthStore } from '../../store/authStore'
+import type { Role } from '../../types/api'
 
 const loginSchema = z.object({
   email: z.string().email('Enter a valid email'),
@@ -23,10 +24,32 @@ const registerSchema = loginSchema.extend({
   lastName: z.string().min(1, 'Required'),
   phone: z.string().min(6, 'Required'),
   clinicId: z.coerce.number().int().min(0),
+  role: z.enum(['Admin', 'Doctor', 'Receptionist']),
 })
 
 type LoginValues = z.infer<typeof loginSchema>
 type RegisterValues = z.infer<typeof registerSchema>
+
+const roleChoices: { value: Role; label: string; description: string; icon: React.ElementType }[] = [
+  {
+    value: 'Receptionist',
+    label: 'Receptionist',
+    description: 'Patients, visits, bills, and payments',
+    icon: UsersRound,
+  },
+  {
+    value: 'Doctor',
+    label: 'Doctor',
+    description: 'Doctors list and patient visits',
+    icon: Stethoscope,
+  },
+  {
+    value: 'Admin',
+    label: 'Admin',
+    description: 'Full control of the clinic',
+    icon: ShieldCheck,
+  },
+]
 
 function AuthFrame({
   title,
@@ -47,7 +70,7 @@ function AuthFrame({
             </div>
             <div>
               <p className="font-semibold">Smart Clinic</p>
-              <p className="text-xs text-[rgb(var(--muted-foreground))]">Medical operations platform</p>
+              <p className="text-xs text-[rgb(var(--muted-foreground))]">Clinic daily work made simple</p>
             </div>
           </div>
           <Card className="p-6">
@@ -60,17 +83,17 @@ function AuthFrame({
       <section className="hidden bg-slate-950 p-10 text-white lg:flex lg:flex-col lg:justify-between">
         <div className="max-w-lg">
           <div className="inline-flex rounded-full border border-white/15 px-3 py-1 text-xs text-teal-100">
-            Enterprise clinic command center
+            Everything your clinic needs in one place
           </div>
           <h2 className="mt-6 text-4xl font-semibold leading-tight">
-            Coordinate care, revenue, and patient flow from one calm workspace.
+            Manage patients, visits, bills, and payments without confusion.
           </h2>
           <p className="mt-4 text-sm leading-6 text-slate-300">
-            Role-aware navigation, fast records, billing visibility, and secure JWT sessions designed for a real presentation.
+            Each person sees the work that matters to them, whether they are a doctor, receptionist, or manager.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-3">
-          {['Appointments', 'Invoices', 'Patients'].map((label) => (
+          {['Visits', 'Bills', 'Patients'].map((label) => (
             <div key={label} className="rounded-lg border border-white/10 bg-white/5 p-4">
               <p className="text-xs text-slate-400">{label}</p>
               <p className="mt-2 text-2xl font-semibold">Live</p>
@@ -101,16 +124,16 @@ export function LoginPage() {
       } catch {
         // The JWT is still usable; /me failure will be handled by protected routes.
       }
-      toast({ kind: 'success', title: 'Welcome back', description: `Signed in as ${auth.role}` })
+      toast({ kind: 'success', title: 'Welcome back', description: `You are signed in as ${auth.role}` })
       navigate('/dashboard')
     },
-    onError: (error) => toast({ kind: 'error', title: 'Login failed', description: getApiMessage(error) }),
+    onError: (error) => toast({ kind: 'error', title: 'Could not sign in', description: getApiMessage(error) }),
   })
 
   if (user) return <Navigate to="/dashboard" replace />
 
   return (
-    <AuthFrame title="Sign in" description="Use your clinic account to open the dashboard.">
+    <AuthFrame title="Sign in" description="Use your clinic account to continue.">
       <form className="grid gap-4" onSubmit={form.handleSubmit((values) => mutation.mutate(values))}>
         <Field label="Email" error={form.formState.errors.email?.message}>
           <div className="relative">
@@ -125,12 +148,12 @@ export function LoginPage() {
           </div>
         </Field>
         <Button className="mt-2 w-full" type="submit" disabled={mutation.isPending}>
-          {mutation.isPending ? 'Signing in...' : 'Sign in'}
+          {mutation.isPending ? 'Please wait...' : 'Sign in'}
           <ArrowRight className="size-4" />
         </Button>
       </form>
       <p className="mt-5 text-center text-sm text-[rgb(var(--muted-foreground))]">
-        Need an account? <Link className="font-medium text-[rgb(var(--primary))]" to="/register">Create one</Link>
+        New here? <Link className="font-medium text-[rgb(var(--primary))]" to="/register">Create an account</Link>
       </p>
     </AuthFrame>
   )
@@ -140,18 +163,19 @@ export function RegisterPage() {
   const navigate = useNavigate()
   const { toast } = useToast()
   const setSession = useAuthStore((state) => state.setSession)
+  const [selectedRole, setSelectedRole] = useState<Role>('Receptionist')
   const form = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema) as never,
-    defaultValues: { firstName: '', lastName: '', email: '', password: '', phone: '', clinicId: 0 },
+    defaultValues: { firstName: '', lastName: '', email: '', password: '', phone: '', clinicId: 1, role: 'Receptionist' },
   })
   const mutation = useMutation({
     mutationFn: authService.register,
     onSuccess: (auth) => {
       setSession(auth)
-      toast({ kind: 'success', title: 'Account created', description: `Registered as ${auth.role}` })
+      toast({ kind: 'success', title: 'Account created', description: `You can now work as ${auth.role}` })
       navigate('/dashboard')
     },
-    onError: (error) => toast({ kind: 'error', title: 'Registration failed', description: getApiMessage(error) }),
+    onError: (error) => toast({ kind: 'error', title: 'Could not create account', description: getApiMessage(error) }),
   })
 
   useEffect(() => {
@@ -159,8 +183,35 @@ export function RegisterPage() {
   }, [])
 
   return (
-    <AuthFrame title="Create account" description="Register a user for the Smart Clinic platform.">
+    <AuthFrame title="Create account" description="Choose who you are, then enter your details.">
       <form className="grid gap-4" onSubmit={form.handleSubmit((values) => mutation.mutate(values as RegisterValues))}>
+        <Field label="I am signing up as" error={form.formState.errors.role?.message}>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {roleChoices.map((choice) => {
+              const Icon = choice.icon
+              const selected = selectedRole === choice.value
+              return (
+                <button
+                  key={choice.value}
+                  type="button"
+                  onClick={() => {
+                    setSelectedRole(choice.value)
+                    form.setValue('role', choice.value, { shouldValidate: true })
+                  }}
+                  className={`rounded-md border p-3 text-left transition ${
+                    selected
+                      ? 'border-[rgb(var(--primary))] bg-[rgb(var(--primary)/0.12)]'
+                      : 'border-[rgb(var(--border))] hover:bg-[rgb(var(--muted))]'
+                  }`}
+                >
+                  <Icon className="mb-2 size-4 text-[rgb(var(--primary))]" />
+                  <span className="block text-sm font-semibold">{choice.label}</span>
+                  <span className="mt-1 block text-xs text-[rgb(var(--muted-foreground))]">{choice.description}</span>
+                </button>
+              )
+            })}
+          </div>
+        </Field>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="First name" error={form.formState.errors.firstName?.message}>
             <Input {...form.register('firstName')} />
@@ -190,12 +241,12 @@ export function RegisterPage() {
           <Input type="password" autoComplete="new-password" {...form.register('password')} />
         </Field>
         <Button className="mt-2 w-full" type="submit" disabled={mutation.isPending}>
-          {mutation.isPending ? 'Creating...' : 'Create account'}
+          {mutation.isPending ? 'Please wait...' : 'Create account'}
           <ArrowRight className="size-4" />
         </Button>
       </form>
       <p className="mt-5 text-center text-sm text-[rgb(var(--muted-foreground))]">
-        Already registered? <Link className="font-medium text-[rgb(var(--primary))]" to="/login">Sign in</Link>
+        Already have an account? <Link className="font-medium text-[rgb(var(--primary))]" to="/login">Sign in</Link>
       </p>
     </AuthFrame>
   )
