@@ -6,6 +6,7 @@ using SmartClinic.Application.Common.Pagination;
 using SmartClinic.Application.DTOs.Appointment;
 using SmartClinic.Application.Interfaces;
 using SmartClinic.Domain.Entities;
+using SmartClinic.Domain.Enums;
 
 namespace SmartClinic.Application.Services;
 
@@ -80,8 +81,10 @@ public class AppointmentService : IAppointmentService
     public async Task Add(CreateAppointmentDto dto)
     {
         await ValidateAppointmentReferences(dto);
+        ValidateNewAppointment(dto);
 
         var appointment = _mapper.Map<Appointment>(dto);
+        appointment.Status = AppointmentStatus.Scheduled;
         await _repo.AddAsync(appointment);
         await _repo.SaveChangesAsync();
 
@@ -101,6 +104,7 @@ public class AppointmentService : IAppointmentService
             throw new KeyNotFoundException("Appointment not found");
 
         await ValidateAppointmentReferences(dto);
+        ValidateAppointmentUpdate(appointment, dto);
 
         _mapper.Map(dto, appointment);
         _repo.Update(appointment);
@@ -113,8 +117,7 @@ public class AppointmentService : IAppointmentService
         if (appointment == null || !CanAccessClinic(appointment.ClinicId))
             throw new KeyNotFoundException("Appointment not found");
 
-        _repo.Delete(appointment);
-        await _repo.SaveChangesAsync();
+        throw new BadRequestException("Appointment deletion is disabled to protect clinic history. Cancel the appointment instead.");
     }
 
     private async Task ValidateAppointmentReferences(CreateAppointmentDto dto)
@@ -138,6 +141,27 @@ public class AppointmentService : IAppointmentService
 
         if (patient.ClinicId != dto.ClinicId || doctor.ClinicId != dto.ClinicId)
             throw new BadRequestException("Patient, doctor, and appointment must belong to the same clinic.");
+    }
+
+    private static void ValidateNewAppointment(CreateAppointmentDto dto)
+    {
+        if (dto.DateTime <= DateTime.UtcNow)
+            throw new BadRequestException("Appointment date/time must be in the future.");
+
+        if (dto.Status != AppointmentStatus.Scheduled)
+            throw new BadRequestException("New appointments must start as Scheduled.");
+    }
+
+    private static void ValidateAppointmentUpdate(Appointment appointment, CreateAppointmentDto dto)
+    {
+        if (appointment.Status == AppointmentStatus.Completed && dto.Status != AppointmentStatus.Completed)
+            throw new BadRequestException("Completed appointments cannot be reopened or cancelled.");
+
+        if (appointment.Status == AppointmentStatus.Cancelled && dto.Status != AppointmentStatus.Cancelled)
+            throw new BadRequestException("Cancelled appointments cannot be reopened.");
+
+        if (dto.Status == AppointmentStatus.Scheduled && dto.DateTime <= DateTime.UtcNow)
+            throw new BadRequestException("Scheduled appointments must be in the future.");
     }
 
     private Expression<Func<Appointment, bool>>? ClinicScope()

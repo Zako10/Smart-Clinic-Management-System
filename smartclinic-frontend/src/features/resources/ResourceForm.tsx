@@ -9,6 +9,9 @@ type FormValues = Record<string, string | number>
 
 function valueFromItem(item: Record<string, unknown> | null, name: string, fallback: string | number) {
   if (!item) return fallback
+  if (name === 'invoiceId' && typeof item.id === 'number') {
+    return item.id
+  }
   if (name === 'firstName' || name === 'lastName') {
     const fullName = String(item.fullName ?? '')
     const parts = fullName.split(' ')
@@ -17,6 +20,10 @@ function valueFromItem(item: Record<string, unknown> | null, name: string, fallb
   const value = item[name]
   if (name === 'dateTime' && typeof value === 'string') {
     return value.slice(0, 16)
+  }
+  if (name === 'status' && typeof value === 'string') {
+    const statusToValue: Record<string, number> = { Scheduled: 0, Completed: 1, Cancelled: 2 }
+    return statusToValue[value] ?? fallback
   }
   return typeof value === 'number' || typeof value === 'string' ? value : fallback
 }
@@ -94,14 +101,16 @@ export function ResourceForm<T extends { id: number }>({
   return (
     <form className="grid gap-4" onSubmit={handleSubmit(onSubmit)}>
       <div className="grid gap-4 sm:grid-cols-2">
-        {config.fields.map((field) => (
-          <FormField
-            key={field.name}
-            field={field}
-            register={register}
-            error={errors[field.name]?.message?.toString()}
-          />
-        ))}
+        {config.fields
+          .filter((field) => item || !field.hideOnCreate)
+          .map((field) => (
+            <FormField
+              key={field.name}
+              field={field}
+              register={register}
+              error={errors[field.name]?.message?.toString()}
+            />
+          ))}
       </div>
       <div className="flex justify-end gap-3 pt-2">
         <Button type="button" variant="secondary" onClick={onCancel}>

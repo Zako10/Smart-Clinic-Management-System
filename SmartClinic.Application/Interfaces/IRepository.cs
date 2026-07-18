@@ -4,7 +4,6 @@ namespace SmartClinic.Application.Interfaces;
 
 public interface IRepository<T> where T : class
 {
-    IQueryable<T> Query();
     Task<List<T>> ListAsync(
         Expression<Func<T, bool>>? predicate = null,
         Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null,

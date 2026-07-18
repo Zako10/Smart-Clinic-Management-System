@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Edit3, Plus, Search, Trash2 } from 'lucide-react'
+import { CreditCard, Edit3, Plus, Search, Trash2 } from 'lucide-react'
 import { getApiMessage } from '../../api/client'
 import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
@@ -33,6 +33,7 @@ export function ResourcePage<T extends Identifiable>({ config }: { config: Resou
   const canCreate = useCan(config.createRoles)
   const canUpdate = useCan(config.updateRoles)
   const canDelete = useCan(config.deleteRoles)
+  const canRecordPayment = config.key === 'payments' && canCreate
 
   const query = useQuery<ResourceData<T>>({
     queryKey: [config.query, page],
@@ -108,7 +109,7 @@ export function ResourcePage<T extends Identifiable>({ config }: { config: Resou
             }}
           >
             <Plus className="size-4" />
-            Add {config.key === 'payments' ? 'payment' : config.title.slice(0, -1)}
+            Add {config.singular}
           </Button>
         ) : null}
       </div>
@@ -156,7 +157,9 @@ export function ResourcePage<T extends Identifiable>({ config }: { config: Resou
                       {column.label}
                     </th>
                   ))}
-                  {(canUpdate || canDelete) && <th className="px-4 py-3 text-right font-semibold">Options</th>}
+                  {(canUpdate || canDelete || canRecordPayment) && (
+                    <th className="px-4 py-3 text-right font-semibold">Options</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-[rgb(var(--border))]">
@@ -167,9 +170,24 @@ export function ResourcePage<T extends Identifiable>({ config }: { config: Resou
                         {column.render(item)}
                       </td>
                     ))}
-                    {(canUpdate || canDelete) && (
+                    {(canUpdate || canDelete || canRecordPayment) && (
                       <td className="px-4 py-3">
                         <div className="flex justify-end gap-2">
+                          {canRecordPayment ? (
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              disabled={(item as { status?: string }).status === 'Paid'}
+                              onClick={() => {
+                                setEditing(item)
+                                setIsFormOpen(true)
+                              }}
+                            >
+                              <CreditCard className="size-4" />
+                              Record
+                            </Button>
+                          ) : null}
                           {canUpdate && config.key !== 'payments' ? (
                             <Button
                               type="button"
@@ -227,8 +245,12 @@ export function ResourcePage<T extends Identifiable>({ config }: { config: Resou
 
       <Dialog
         open={isFormOpen}
-        title={editing ? `Edit ${config.title}` : `New ${config.title}`}
-        description="Fill in the details below, then save."
+        title={editing && config.key !== 'payments' ? `Edit ${config.singular}` : `New ${config.singular}`}
+        description={
+          config.key === 'payments'
+            ? 'Choose an invoice, amount, and method to record a payment.'
+            : 'Fill in the details below, then save.'
+        }
         onClose={() => setIsFormOpen(false)}
       >
         <ResourceForm
@@ -242,8 +264,8 @@ export function ResourcePage<T extends Identifiable>({ config }: { config: Resou
 
       <ConfirmDialog
         open={Boolean(deleting)}
-        title="Delete item"
-        description="This will remove it permanently."
+        title="Remove item"
+        description="Confirm this action before continuing."
         pending={deleteMutation.isPending}
         onCancel={() => setDeleting(null)}
         onConfirm={() => deleting && deleteMutation.mutate(deleting)}

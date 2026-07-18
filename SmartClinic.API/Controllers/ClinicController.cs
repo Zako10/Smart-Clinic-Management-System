@@ -58,15 +58,6 @@ public class ClinicController : ControllerBase
     [Authorize(Policy = "AdminOnly")]
     public async Task<IActionResult> Create(CreateClinicDto dto)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(new ApiResponse<string>(
-                false,
-                "Invalid data",
-                null
-            ));
-        }
-
         await _service.Add(dto);
 
         return StatusCode(StatusCodes.Status201Created, new ApiResponse<string>(
@@ -80,26 +71,6 @@ public class ClinicController : ControllerBase
     [Authorize(Policy = "AdminOnly")]
     public async Task<IActionResult> Update([Range(1, int.MaxValue)] int id, CreateClinicDto dto)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(new ApiResponse<string>(
-                false,
-                "Invalid data",
-                null
-            ));
-        }
-
-        var existing = await _service.GetById(id);
-
-        if (existing == null)
-        {
-            return NotFound(new ApiResponse<string>(
-                false,
-                "Clinic not found",
-                null
-            ));
-        }
-
         await _service.Update(id, dto);
 
         return Ok(new ApiResponse<string>(
@@ -113,17 +84,6 @@ public class ClinicController : ControllerBase
     [Authorize(Policy = "AdminOnly")]
     public async Task<IActionResult> Delete([Range(1, int.MaxValue)] int id)
     {
-        var existing = await _service.GetById(id);
-
-        if (existing == null)
-        {
-            return NotFound(new ApiResponse<string>(
-                false,
-                "Clinic not found",
-                null
-            ));
-        }
-
         await _service.Delete(id);
 
         return Ok(new ApiResponse<string>(

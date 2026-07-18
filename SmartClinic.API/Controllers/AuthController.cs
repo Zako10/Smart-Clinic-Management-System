@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartClinic.API.Extensions;
-using SmartClinic.Application.Auth.Commands;
-using SmartClinic.Application.Auth.Handlers;
 using SmartClinic.Application.Common.Responses;
+using SmartClinic.Application.DTOs.Auth;
+using SmartClinic.Application.Interfaces;
 
 namespace SmartClinic.API.Controllers;
 
@@ -11,20 +11,18 @@ namespace SmartClinic.API.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
-    private readonly RegisterHandler _registerHandler;
-    private readonly LoginHandler _loginHandler;
+    private readonly IAuthService _authService;
 
-    public AuthController(RegisterHandler registerHandler, LoginHandler loginHandler)
+    public AuthController(IAuthService authService)
     {
-        _registerHandler = registerHandler;
-        _loginHandler = loginHandler;
+        _authService = authService;
     }
 
     [HttpPost("register")]
     [AllowAnonymous]
-    public async Task<IActionResult> Register([FromBody] RegisterCommand command)
+    public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
-        var result = await _registerHandler.Handle(command);
+        var result = await _authService.Register(request);
 
         return StatusCode(StatusCodes.Status201Created, new ApiResponse<object>(
             true,
@@ -34,9 +32,9 @@ public class AuthController : ControllerBase
 
     [HttpPost("login")]
     [AllowAnonymous]
-    public async Task<IActionResult> Login([FromBody] LoginCommand command)
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
-        var result = await _loginHandler.Handle(command);
+        var result = await _authService.Login(request);
 
         return Ok(new ApiResponse<object>(
             true,

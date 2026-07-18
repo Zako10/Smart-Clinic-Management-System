@@ -95,8 +95,7 @@ public class DoctorService : IDoctorService
         if (doctor == null || !CanAccessClinic(doctor.ClinicId))
             throw new KeyNotFoundException("Doctor not found");
 
-        _repo.Delete(doctor);
-        await _repo.SaveChangesAsync();
+        throw new BadRequestException("Doctor deletion is disabled to protect clinic history.");
     }
 
     private async Task ValidateClinic(int clinicId)

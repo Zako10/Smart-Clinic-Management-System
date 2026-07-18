@@ -1,33 +1,34 @@
 import { apiClient } from '../api/client'
-import type { ApiResponse, AuthResult, CurrentUser } from '../types/api'
-import type { Role } from '../types/api'
+import { normalizeRole } from '../types/api'
+import type { ApiResponse, AuthResult, CurrentUser, LoginPayload, RegisterPayload } from '../types/api'
 
-export type LoginPayload = {
-  email: string
-  password: string
+function normalizeAuthResult(value: AuthResult) {
+  const role = normalizeRole(value?.role)
+  if (!value?.token || !role) {
+    throw new Error('The server returned an invalid authentication response.')
+  }
+  return { ...value, role }
 }
 
-export type RegisterPayload = {
-  firstName: string
-  lastName: string
-  email: string
-  password: string
-  phone: string
-  clinicId: number
-  role: Role
+function normalizeCurrentUser(value: CurrentUser) {
+  const role = normalizeRole(value?.role)
+  if (!role) {
+    throw new Error('The server returned an invalid user profile response.')
+  }
+  return { ...value, role }
 }
 
 export const authService = {
   async login(payload: LoginPayload) {
     const { data } = await apiClient.post<ApiResponse<AuthResult>>('/Auth/login', payload)
-    return data.data
+    return normalizeAuthResult(data.data)
   },
   async register(payload: RegisterPayload) {
     const { data } = await apiClient.post<ApiResponse<AuthResult>>('/Auth/register', payload)
-    return data.data
+    return normalizeAuthResult(data.data)
   },
   async me() {
     const { data } = await apiClient.get<ApiResponse<CurrentUser>>('/Auth/me')
-    return data.data
+    return normalizeCurrentUser(data.data)
   },
 }

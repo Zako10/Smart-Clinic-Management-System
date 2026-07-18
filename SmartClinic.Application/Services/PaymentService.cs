@@ -45,6 +45,9 @@ public class PaymentService : IPaymentService
             if (remaining <= 0 || invoice.Status == InvoiceStatus.Paid)
                 throw new ConflictException("Invoice is already paid.");
 
+            if (dto.Amount <= 0)
+                throw new BadRequestException("Payment amount must be greater than zero.");
+
             if (dto.Amount > remaining)
                 throw new BadRequestException($"Payment amount cannot exceed the remaining amount: {remaining}.");
 

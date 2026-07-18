@@ -8,6 +8,7 @@ import { resourceConfigs } from '../features/resources/resourceConfig'
 import { AppLayout } from '../layouts/AppLayout'
 import { DashboardPage } from '../pages/DashboardPage'
 import { ForbiddenPage, NotFoundPage } from '../pages/ErrorPages'
+import { ProfilePage } from '../pages/ProfilePage'
 import { useAuthStore } from '../store/authStore'
 import type { Appointment, Clinic, Doctor, Invoice, Patient } from '../types/api'
 import { ProtectedRoute } from './ProtectedRoute'
@@ -49,6 +50,7 @@ export function App() {
               <Route element={<AppLayout />}>
                 <Route index element={<Navigate to="/dashboard" replace />} />
                 <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
                 {Object.values(resourceConfigs).map((config) => (
                   <Route
                     key={config.key}

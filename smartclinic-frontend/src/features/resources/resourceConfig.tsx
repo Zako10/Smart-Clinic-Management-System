@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import { z } from 'zod'
 import type { Appointment, Clinic, Doctor, Invoice, Patient, Role } from '../../types/api'
-import { currency, dateTime } from '../../utils/format'
+import { currency, formatDateTime } from '../../utils/format'
 import { Badge } from '../../components/ui/badge'
 
 export type ResourceKey =
@@ -25,11 +25,13 @@ export type FieldConfig = {
   label: string
   type?: 'text' | 'email' | 'tel' | 'number' | 'datetime-local' | 'textarea' | 'select'
   options?: { label: string; value: string | number }[]
+  hideOnCreate?: boolean
 }
 
 export type ResourceConfig<T> = {
   key: ResourceKey
   title: string
+  singular: string
   description: string
   endpoint: string
   icon: React.ElementType
@@ -55,6 +57,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
   clinics: {
     key: 'clinics',
     title: 'Clinics',
+    singular: 'clinic',
     description: 'Add and update clinic branches and contact details.',
     endpoint: '/Clinic',
     icon: Building2,
@@ -89,6 +92,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
   doctors: {
     key: 'doctors',
     title: 'Doctors',
+    singular: 'doctor',
     description: 'See doctors, specialties, and clinic contact numbers.',
     endpoint: '/Doctor',
     icon: Stethoscope,
@@ -131,6 +135,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
   patients: {
     key: 'patients',
     title: 'Patients',
+    singular: 'patient',
     description: 'Add patients and keep their contact details ready.',
     endpoint: '/Patient',
     icon: UsersRound,
@@ -163,11 +168,12 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
   },
   appointments: {
     key: 'appointments',
-    title: 'Visits',
-    description: 'Plan patient visits and follow their current status.',
+    title: 'Appointments',
+    singular: 'appointment',
+    description: 'Plan patient appointments and follow their current status.',
     endpoint: '/Appointment',
     icon: CalendarClock,
-    roles: ['Admin', 'Doctor'],
+    roles: ['Admin', 'Doctor', 'Receptionist'],
     createRoles: ['Admin', 'Receptionist'],
     updateRoles: ['Admin', 'Doctor'],
     deleteRoles: ['Admin'],
@@ -176,7 +182,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
     searchable: (appointment: Appointment) =>
       `${appointment.patientId} ${appointment.doctorId} ${appointment.status} ${appointment.notes}`,
     columns: [
-      { label: 'Date', render: (appointment: Appointment) => dateTime.format(new Date(appointment.dateTime)) },
+      { label: 'Date', render: (appointment: Appointment) => formatDateTime(appointment.dateTime) },
       { label: 'Patient', render: (appointment: Appointment) => `#${appointment.patientId}` },
       { label: 'Doctor', render: (appointment: Appointment) => `#${appointment.doctorId}` },
       {
@@ -214,6 +220,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
         name: 'status',
         label: 'Status',
         type: 'select',
+        hideOnCreate: true,
         options: [
           { label: 'Scheduled', value: 0 },
           { label: 'Completed', value: 1 },
@@ -233,8 +240,9 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
   },
   invoices: {
     key: 'invoices',
-    title: 'Bills',
-    description: 'Track clinic bills, amounts, and payment status.',
+    title: 'Invoices',
+    singular: 'invoice',
+    description: 'Track clinic invoices, amounts, and payment status.',
     endpoint: '/Invoice',
     icon: FileText,
     roles: ['Admin', 'Receptionist'],
@@ -271,7 +279,8 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
   payments: {
     key: 'payments',
     title: 'Payments',
-    description: 'Record money paid for clinic bills.',
+    singular: 'payment',
+    description: 'Record money paid against clinic invoices.',
     endpoint: '/Payment',
     icon: CreditCard,
     roles: ['Admin', 'Receptionist'],
@@ -282,10 +291,24 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
     paginated: false,
     searchable: (invoice: Invoice) => `${invoice.id} ${invoice.status} ${invoice.totalAmount}`,
     columns: [
-      { label: 'Bill', render: (invoice: Invoice) => <span className="font-medium">#{invoice.id}</span> },
-      { label: 'Bill amount', render: (invoice: Invoice) => currency.format(invoice.totalAmount) },
-      { label: 'Status', render: (invoice: Invoice) => <Badge>{invoice.status}</Badge> },
-      { label: 'Next step', render: () => <span className="text-[rgb(var(--muted-foreground))]">Add payment</span> },
+      { label: 'Invoice', render: (invoice: Invoice) => <span className="font-medium">#{invoice.id}</span> },
+      { label: 'Invoice amount', render: (invoice: Invoice) => currency.format(invoice.totalAmount) },
+      {
+        label: 'Status',
+        render: (invoice: Invoice) => (
+          <Badge tone={invoice.status === 'Paid' ? 'success' : invoice.status === 'Partial' ? 'warning' : 'neutral'}>
+            {invoice.status}
+          </Badge>
+        ),
+      },
+      {
+        label: 'Next step',
+        render: (invoice: Invoice) => (
+          <span className="text-[rgb(var(--muted-foreground))]">
+            {invoice.status === 'Paid' ? 'Fully paid' : 'Ready to record'}
+          </span>
+        ),
+      },
     ],
     schema: z.object({
       invoiceId: positiveNumber,
@@ -293,7 +316,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
       method: z.coerce.number().int().min(0).max(1),
     }),
     fields: [
-      { name: 'invoiceId', label: 'Bill number', type: 'number' },
+      { name: 'invoiceId', label: 'Invoice number', type: 'number' },
       { name: 'amount', label: 'Amount', type: 'number' },
       {
         name: 'method',
@@ -318,6 +341,6 @@ export const metricCards = [
   { key: 'clinics', label: 'Clinics', icon: Building2 },
   { key: 'doctors', label: 'Doctors', icon: Stethoscope },
   { key: 'patients', label: 'Patients', icon: UsersRound },
-  { key: 'appointments', label: 'Visits', icon: CalendarClock },
-  { key: 'invoices', label: 'Bills', icon: Banknote },
+  { key: 'appointments', label: 'Appointments', icon: CalendarClock },
+  { key: 'invoices', label: 'Invoices', icon: Banknote },
 ] as const

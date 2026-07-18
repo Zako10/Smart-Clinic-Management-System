@@ -21,7 +21,7 @@ public class AppointmentController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Policy = "AdminOrDoctor")]
+    [Authorize(Policy = "ClinicStaff")]
     public async Task<IActionResult> GetAll([FromQuery] PaginationRequest request)
     {
         var data = await _service.GetPagedAsync(request);
@@ -33,7 +33,7 @@ public class AppointmentController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [Authorize(Policy = "AdminOrDoctor")]
+    [Authorize(Policy = "ClinicStaff")]
     public async Task<IActionResult> Get([Range(1, int.MaxValue)] int id)
     {
         var appointment = await _service.GetById(id);
@@ -48,9 +48,6 @@ public class AppointmentController : ControllerBase
     [Authorize(Policy = "AdminOrReceptionist")]
     public async Task<IActionResult> Create(CreateAppointmentDto dto)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(new ApiResponse<string>(
-                false, "Invalid data", null));
         await _service.Add(dto);
         return StatusCode(StatusCodes.Status201Created, new ApiResponse<string>(
             true, "Appointment created successfully", null));
@@ -60,13 +57,6 @@ public class AppointmentController : ControllerBase
     [Authorize(Policy = "AdminOrDoctor")]
     public async Task<IActionResult> Update([Range(1, int.MaxValue)] int id, CreateAppointmentDto dto)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(new ApiResponse<string>(
-                false, "Invalid data", null));
-        var existing = await _service.GetById(id);
-        if (existing == null)
-            return NotFound(new ApiResponse<string>(
-                false, "Appointment not found", null));
         await _service.Update(id, dto);
         return Ok(new ApiResponse<string>(
             true, "Appointment updated successfully", null));
@@ -76,10 +66,6 @@ public class AppointmentController : ControllerBase
     [Authorize(Policy = "AdminOnly")]
     public async Task<IActionResult> Delete([Range(1, int.MaxValue)] int id)
     {
-        var existing = await _service.GetById(id);
-        if (existing == null)
-            return NotFound(new ApiResponse<string>(
-                false, "Appointment not found", null));
         await _service.Delete(id);
         return Ok(new ApiResponse<string>(
             true, "Appointment deleted successfully", null));

@@ -97,6 +97,43 @@ public class ApiSmokeTests
     }
 
     [Fact]
+    public async Task Register_IgnoresPrivilegedRoleRequest_AndCreatesReceptionist()
+    {
+        await using var factory = CreateFactory();
+        var client = factory.CreateClient();
+
+        var register = await client.PostAsJsonAsync("/api/auth/register", new
+        {
+            firstName = "Not",
+            lastName = "Admin",
+            email = "notadmin@example.com",
+            password = "P@ssw0rd123",
+            phone = "01012345679",
+            role = "Admin",
+            clinicId = 999
+        });
+
+        Assert.Equal(HttpStatusCode.Created, register.StatusCode);
+
+        var login = await client.PostAsJsonAsync("/api/auth/login", new
+        {
+            email = "notadmin@example.com",
+            password = "P@ssw0rd123"
+        });
+
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+        var token = await ReadTokenAsync(login);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var me = await client.GetAsync("/api/auth/me");
+        var json = await me.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, me.StatusCode);
+        Assert.Contains("Receptionist", json);
+        Assert.DoesNotContain("Admin", json);
+    }
+
+    [Fact]
     public async Task Admin_CanExerciseCoreClinicWorkflow()
     {
         await using var factory = CreateFactory();

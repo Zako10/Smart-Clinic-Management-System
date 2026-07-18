@@ -16,6 +16,12 @@ export const dateTime = new Intl.DateTimeFormat('en-US', {
   minute: '2-digit',
 })
 
+export function formatDateTime(value: string | Date | null | undefined) {
+  if (!value) return '-'
+  const date = value instanceof Date ? value : new Date(value)
+  return Number.isNaN(date.getTime()) ? '-' : dateTime.format(date)
+}
+
 export function initials(value?: string) {
   return (value ?? 'SC')
     .split(' ')

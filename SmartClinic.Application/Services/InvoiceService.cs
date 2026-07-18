@@ -55,6 +55,9 @@ public class InvoiceService : IInvoiceService
         if (appointment == null || !CanAccessClinic(appointment.ClinicId))
             throw new KeyNotFoundException("Appointment not found");
 
+        if (appointment.Status == AppointmentStatus.Cancelled)
+            throw new BadRequestException("Cannot create an invoice for a cancelled appointment.");
+
         var existing = await _repo.AnyAsync(i =>
             i.AppointmentId == dto.AppointmentId
             && (_currentUser.IsAdmin || i.ClinicId == _currentUser.ClinicId));
@@ -92,6 +95,20 @@ public class InvoiceService : IInvoiceService
         if (appointment == null || !CanAccessClinic(appointment.ClinicId))
             throw new KeyNotFoundException("Appointment not found");
 
+        if (appointment.Status == AppointmentStatus.Cancelled)
+            throw new BadRequestException("Cannot move an invoice to a cancelled appointment.");
+
+        if (invoice.Status != InvoiceStatus.Pending)
+            throw new BadRequestException("Only pending invoices can be changed.");
+
+        var duplicateAppointmentInvoice = await _repo.AnyAsync(i =>
+            i.Id != id
+            && i.AppointmentId == dto.AppointmentId
+            && (_currentUser.IsAdmin || i.ClinicId == _currentUser.ClinicId));
+
+        if (duplicateAppointmentInvoice)
+            throw new ConflictException("Invoice already exists for this appointment.");
+
         invoice.AppointmentId = dto.AppointmentId;
         invoice.TotalAmount = dto.TotalAmount;
         invoice.ClinicId = appointment.ClinicId;
@@ -106,8 +123,7 @@ public class InvoiceService : IInvoiceService
         if (invoice == null || !CanAccessClinic(invoice.ClinicId))
             throw new KeyNotFoundException("Invoice not found");
 
-        _repo.Delete(invoice);
-        await _repo.SaveChangesAsync();
+        throw new BadRequestException("Invoice deletion is disabled to protect billing history.");
     }
 
     private Expression<Func<Invoice, bool>>? ClinicScope()

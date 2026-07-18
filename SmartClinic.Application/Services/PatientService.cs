@@ -95,8 +95,7 @@ public class PatientService : IPatientService
         if (patient == null || !CanAccessClinic(patient.ClinicId))
             throw new KeyNotFoundException("Patient not found");
 
-        _repo.Delete(patient);
-        await _repo.SaveChangesAsync();
+        throw new BadRequestException("Patient deletion is disabled to protect medical history.");
     }
 
     private async Task ValidateClinic(int clinicId)

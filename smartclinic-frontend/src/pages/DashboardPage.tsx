@@ -4,11 +4,11 @@ import { Link } from 'react-router-dom'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import { Card, CardHeader } from '../components/ui/card'
-import { metricCards, resourceConfigs } from '../features/resources/resourceConfig'
+import { metricCards, resourceConfigs, type ResourceKey } from '../features/resources/resourceConfig'
 import { resourceService } from '../services/resourceService'
 import { useAuthStore } from '../store/authStore'
 import type { PaginatedResult } from '../types/api'
-import { currency, dateTime } from '../utils/format'
+import { currency, formatDateTime } from '../utils/format'
 
 function countFromData(data: unknown) {
   if (Array.isArray(data)) return data.length
@@ -20,21 +20,38 @@ function countFromData(data: unknown) {
 
 export function DashboardPage() {
   const user = useAuthStore((state) => state.user)
+  const visibleResources = Object.values(resourceConfigs).filter((config) => user?.role && config.roles.includes(user.role))
+  const visibleMetricCards = metricCards.filter((metric) =>
+    visibleResources.some((resource) => resource.key === metric.key),
+  )
+  const canSeeAppointments = visibleResources.some((resource) => resource.key === 'appointments')
+  const canSeeInvoices = visibleResources.some((resource) => resource.key === 'invoices')
+  const metricQueryFns: Record<(typeof metricCards)[number]['key'], () => Promise<unknown>> = {
+    clinics: resourceService.clinics,
+    doctors: () => resourceService.doctors({ pageNumber: 1, pageSize: 5 }),
+    patients: () => resourceService.patients({ pageNumber: 1, pageSize: 5 }),
+    appointments: () => resourceService.appointments({ pageNumber: 1, pageSize: 5 }),
+    invoices: resourceService.invoices,
+  }
   const queries = useQueries({
-    queries: [
-      { queryKey: ['clinics'], queryFn: resourceService.clinics, retry: false },
-      { queryKey: ['doctors', 1], queryFn: () => resourceService.doctors({ pageNumber: 1, pageSize: 5 }), retry: false },
-      { queryKey: ['patients', 1], queryFn: () => resourceService.patients({ pageNumber: 1, pageSize: 5 }), retry: false },
-      { queryKey: ['appointments', 1], queryFn: () => resourceService.appointments({ pageNumber: 1, pageSize: 5 }), retry: false },
-      { queryKey: ['invoices'], queryFn: resourceService.invoices, retry: false },
-    ],
+    queries: visibleMetricCards.map((metric) => ({
+      queryKey: [metric.key, 'dashboard'],
+      queryFn: metricQueryFns[metric.key],
+      retry: false,
+    })),
   })
 
-  const [clinics, doctors, patients, appointments, invoices] = queries
-  const invoiceList = Array.isArray(invoices.data) ? invoices.data : []
-  const appointmentList = appointments.data && 'items' in appointments.data ? appointments.data.items : []
+  const dataByKey = Object.fromEntries(visibleMetricCards.map((metric, index) => [metric.key, queries[index]?.data])) as Partial<
+    Record<ResourceKey, unknown>
+  >
+  const queryByKey = Object.fromEntries(visibleMetricCards.map((metric, index) => [metric.key, queries[index]]))
+  const invoiceList = Array.isArray(dataByKey.invoices) ? dataByKey.invoices : []
+  const appointmentData = dataByKey.appointments
+  const appointmentList =
+    appointmentData && typeof appointmentData === 'object' && 'items' in appointmentData
+      ? (appointmentData as PaginatedResult<{ id: number; patientId: number; doctorId: number; status: string; dateTime: string }>).items
+      : []
   const totalRevenue = invoiceList.reduce((sum, invoice) => sum + invoice.totalAmount, 0)
-  const visibleResources = Object.values(resourceConfigs).filter((config) => user?.role && config.roles.includes(user.role))
 
   return (
     <div className="grid gap-6">
@@ -45,7 +62,7 @@ export function DashboardPage() {
             Good day, {user?.fullName ?? user?.role}. Your clinic is ready.
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-[rgb(var(--muted-foreground))]">
-            Follow patients, visits, bills, and payments from one clear place.
+            Follow patients, appointments, invoices, and payments from one clear place.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             {visibleResources.slice(0, 3).map((resource) => (
@@ -86,79 +103,83 @@ export function DashboardPage() {
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        {metricCards.map((metric, index) => {
+        {visibleMetricCards.map((metric) => {
           const Icon = metric.icon
-          const data = [clinics.data, doctors.data, patients.data, appointments.data, invoices.data][index]
+          const query = queryByKey[metric.key]
           return (
             <Card key={metric.key} className="p-5">
               <div className="flex items-center justify-between">
                 <div className="grid size-9 place-items-center rounded-lg bg-[rgb(var(--muted))]">
                   <Icon className="size-4 text-[rgb(var(--muted-foreground))]" />
                 </div>
-                {queries[index].isError ? <Badge tone="danger">Not available</Badge> : <Badge tone="neutral">Ready</Badge>}
+                {query?.isError ? <Badge tone="danger">Not available</Badge> : <Badge tone="neutral">Ready</Badge>}
               </div>
-              <p className="mt-4 text-2xl font-semibold">{queries[index].isLoading ? '...' : countFromData(data)}</p>
+              <p className="mt-4 text-2xl font-semibold">{query?.isLoading ? '...' : countFromData(dataByKey[metric.key])}</p>
               <p className="text-sm text-[rgb(var(--muted-foreground))]">{metric.label}</p>
             </Card>
           )
         })}
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-[1fr_24rem]">
-        <Card>
-          <CardHeader title="Upcoming visits" description="The latest visits you can see" />
-          <div className="divide-y divide-[rgb(var(--border))]">
-            {appointmentList.length === 0 ? (
-              <div className="p-6 text-sm text-[rgb(var(--muted-foreground))]">No visits yet.</div>
-            ) : (
-              appointmentList.map((appointment) => (
-                <div key={appointment.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="grid size-10 place-items-center rounded-lg bg-[rgb(var(--primary)/0.12)]">
-                      <Clock3 className="size-4 text-[rgb(var(--primary))]" />
+      <section className="grid gap-6 lg:grid-cols-2">
+        {canSeeAppointments ? (
+          <Card>
+            <CardHeader title="Upcoming appointments" description="The latest appointments you can see" />
+            <div className="divide-y divide-[rgb(var(--border))]">
+              {appointmentList.length === 0 ? (
+                <div className="p-6 text-sm text-[rgb(var(--muted-foreground))]">No appointments yet.</div>
+              ) : (
+                appointmentList.map((appointment) => (
+                  <div key={appointment.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="grid size-10 place-items-center rounded-lg bg-[rgb(var(--primary)/0.12)]">
+                        <Clock3 className="size-4 text-[rgb(var(--primary))]" />
+                      </div>
+                      <div>
+                        <p className="font-medium">Appointment #{appointment.id}</p>
+                        <p className="text-sm text-[rgb(var(--muted-foreground))]">
+                          Patient #{appointment.patientId} with Doctor #{appointment.doctorId}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium">Visit #{appointment.id}</p>
-                      <p className="text-sm text-[rgb(var(--muted-foreground))]">
-                        Patient #{appointment.patientId} with Doctor #{appointment.doctorId}
+                    <div className="text-left sm:text-right">
+                      <Badge tone={appointment.status === 'Completed' ? 'success' : 'warning'}>{appointment.status}</Badge>
+                      <p className="mt-1 text-xs text-[rgb(var(--muted-foreground))]">
+                        {formatDateTime(appointment.dateTime)}
                       </p>
                     </div>
                   </div>
-                  <div className="text-left sm:text-right">
-                    <Badge tone={appointment.status === 'Completed' ? 'success' : 'warning'}>{appointment.status}</Badge>
-                    <p className="mt-1 text-xs text-[rgb(var(--muted-foreground))]">
-                      {dateTime.format(new Date(appointment.dateTime))}
-                    </p>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </Card>
+                ))
+              )}
+            </div>
+          </Card>
+        ) : null}
 
-        <Card>
-          <CardHeader title="Money summary" description="Total amount from clinic bills" />
-          <div className="p-5">
-            <div className="flex items-center gap-3">
-              <div className="grid size-12 place-items-center rounded-lg bg-teal-500/10 text-teal-500">
-                <Activity className="size-5" />
-              </div>
-              <div>
-                <p className="text-2xl font-semibold">{currency.format(totalRevenue)}</p>
-                <p className="text-sm text-[rgb(var(--muted-foreground))]">Total bills</p>
-              </div>
-            </div>
-            <div className="mt-6 grid gap-3">
-              {invoiceList.slice(0, 4).map((invoice) => (
-                <div key={invoice.id} className="flex items-center justify-between rounded-md bg-[rgb(var(--muted))] px-3 py-2 text-sm">
-                  <span>Bill #{invoice.id}</span>
-                  <span className="font-medium">{currency.format(invoice.totalAmount)}</span>
+        {canSeeInvoices ? (
+          <Card>
+            <CardHeader title="Money summary" description="Total amount from clinic invoices" />
+            <div className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="grid size-12 place-items-center rounded-lg bg-teal-500/10 text-teal-500">
+                  <Activity className="size-5" />
                 </div>
-              ))}
-              {invoiceList.length === 0 ? <p className="text-sm text-[rgb(var(--muted-foreground))]">No bills yet.</p> : null}
+                <div>
+                  <p className="text-2xl font-semibold">{currency.format(totalRevenue)}</p>
+                  <p className="text-sm text-[rgb(var(--muted-foreground))]">Total invoices</p>
+                </div>
+              </div>
+              <div className="mt-6 grid gap-3">
+                {invoiceList.slice(0, 4).map((invoice) => (
+                  <div key={invoice.id} className="flex items-center justify-between rounded-md bg-[rgb(var(--muted))] px-3 py-2 text-sm">
+                    <span>Invoice #{invoice.id}</span>
+                    <span className="font-medium">{currency.format(invoice.totalAmount)}</span>
+                  </div>
+                ))}
+                {invoiceList.length === 0 ? <p className="text-sm text-[rgb(var(--muted-foreground))]">No invoices yet.</p> : null}
+              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
+        ) : null}
       </section>
     </div>
   )

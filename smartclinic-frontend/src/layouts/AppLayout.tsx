@@ -1,20 +1,31 @@
-import { LogOut, Menu, Moon, Search, Sun, X } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
+import { LayoutDashboard, LogOut, Menu, Moon, Search, Sun, UserRound, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import type { ElementType } from 'react'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { ErrorBoundary } from '../components/ErrorBoundary'
 import { Button } from '../components/ui/button'
 import { resourceConfigs } from '../features/resources/resourceConfig'
 import { useAuthStore } from '../store/authStore'
 import { cn } from '../utils/cn'
 import { initials } from '../utils/format'
 
-const navItems = [
-  { label: 'Home', to: '/dashboard', roles: ['Admin', 'Doctor', 'Receptionist'] as const },
+type NavItem = {
+  label: string
+  to: string
+  roles: readonly string[]
+  Icon: ElementType
+}
+
+const navItems: NavItem[] = [
+  { label: 'Dashboard', to: '/dashboard', roles: ['Admin', 'Doctor', 'Receptionist'] as const, Icon: LayoutDashboard },
   ...Object.values(resourceConfigs).map((config) => ({
     label: config.title,
     to: `/${config.key}`,
     roles: config.roles,
     Icon: config.icon,
   })),
+  { label: 'Profile', to: '/profile', roles: ['Admin', 'Doctor', 'Receptionist'] as const, Icon: UserRound },
 ]
 
 export function AppLayout() {
@@ -22,7 +33,9 @@ export function AppLayout() {
   const [dark, setDark] = useState(() => localStorage.getItem('smartclinic.theme') === 'dark')
   const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
+  const location = useLocation()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark)
@@ -49,7 +62,7 @@ export function AppLayout() {
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
         {visibleNav.map((item) => {
-          const Icon = 'Icon' in item && item.Icon ? item.Icon : undefined
+          const Icon = item.Icon
           return (
             <NavLink
               key={item.to}
@@ -64,7 +77,7 @@ export function AppLayout() {
                 )
               }
             >
-              {Icon ? <Icon className="size-4" /> : <span className="size-4 rounded bg-current opacity-50" />}
+              <Icon className="size-4" />
               {item.label}
             </NavLink>
           )
@@ -111,7 +124,8 @@ export function AppLayout() {
             variant="secondary"
             onClick={() => {
               logout()
-              navigate('/login')
+              queryClient.clear()
+              navigate('/login', { replace: true })
             }}
           >
             <LogOut className="size-4" />
@@ -119,7 +133,9 @@ export function AppLayout() {
           </Button>
         </header>
         <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <Outlet />
+          <ErrorBoundary key={location.pathname}>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
     </div>

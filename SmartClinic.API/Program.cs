@@ -7,12 +7,8 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SmartClinic.API.Middleware;
 using SmartClinic.API.Services;
-using SmartClinic.Application.Auth.Commands;
-using SmartClinic.Application.Auth.Handlers;
-using SmartClinic.Application.Auth.Validation;
 using SmartClinic.Application.Common.Mapping;
 using SmartClinic.Application.Common.Responses;
-using SmartClinic.Application.Common.Validation;
 using SmartClinic.Application.Interfaces;
 using SmartClinic.Application.Services;
 using SmartClinic.Domain.Entities;
@@ -55,6 +51,7 @@ builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<IDoctorService, DoctorService>();
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddControllers()
     .ConfigureApiBehaviorOptions(options =>
     {
@@ -110,10 +107,6 @@ builder.Services.AddAutoMapper(_ => { }, typeof(MappingProfile).Assembly);
 // Auth Services
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IJwtService, JwtService>();
-builder.Services.AddScoped<ICommandValidator<RegisterCommand>, RegisterCommandValidator>();
-builder.Services.AddScoped<ICommandValidator<LoginCommand>, LoginCommandValidator>();
-builder.Services.AddScoped<RegisterHandler>();
-builder.Services.AddScoped<LoginHandler>();
 
 // JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -165,6 +158,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
     options.AddPolicy("DoctorOnly", policy => policy.RequireRole("Doctor"));
     options.AddPolicy("AdminOrDoctor", policy => policy.RequireRole("Admin", "Doctor"));
+    options.AddPolicy("ClinicStaff", policy => policy.RequireRole("Admin", "Doctor", "Receptionist"));
     options.AddPolicy("ReceptionistOnly", policy => policy.RequireRole("Receptionist"));
     options.AddPolicy("AdminOrReceptionist", policy => policy.RequireRole("Admin", "Receptionist"));
 });

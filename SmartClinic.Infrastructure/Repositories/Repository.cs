@@ -14,9 +14,6 @@ public class Repository<T> : IRepository<T> where T : class
         _context = context;
     }
 
-    public IQueryable<T> Query()
-        => _context.Set<T>().AsNoTracking();
-
     public async Task<List<T>> ListAsync(
         Expression<Func<T, bool>>? predicate = null,
         Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null,

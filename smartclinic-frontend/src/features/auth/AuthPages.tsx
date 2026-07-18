@@ -1,7 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
-import { Activity, ArrowRight, LockKeyhole, Mail, Phone, ShieldCheck, Stethoscope, UserRound, UsersRound } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { Activity, ArrowRight, LockKeyhole, Mail, Phone, UserRound } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
@@ -12,44 +11,20 @@ import { Field, Input } from '../../components/ui/input'
 import { useToast } from '../../hooks/useToast'
 import { authService } from '../../services/authService'
 import { useAuthStore } from '../../store/authStore'
-import type { Role } from '../../types/api'
 
 const loginSchema = z.object({
   email: z.string().email('Enter a valid email'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
 })
 
 const registerSchema = loginSchema.extend({
   firstName: z.string().min(1, 'Required'),
   lastName: z.string().min(1, 'Required'),
   phone: z.string().min(6, 'Required'),
-  clinicId: z.coerce.number().int().min(0),
-  role: z.enum(['Admin', 'Doctor', 'Receptionist']),
 })
 
 type LoginValues = z.infer<typeof loginSchema>
 type RegisterValues = z.infer<typeof registerSchema>
-
-const roleChoices: { value: Role; label: string; description: string; icon: React.ElementType }[] = [
-  {
-    value: 'Receptionist',
-    label: 'Receptionist',
-    description: 'Patients, visits, bills, and payments',
-    icon: UsersRound,
-  },
-  {
-    value: 'Doctor',
-    label: 'Doctor',
-    description: 'Doctors list and patient visits',
-    icon: Stethoscope,
-  },
-  {
-    value: 'Admin',
-    label: 'Admin',
-    description: 'Full control of the clinic',
-    icon: ShieldCheck,
-  },
-]
 
 function AuthFrame({
   title,
@@ -162,56 +137,36 @@ export function LoginPage() {
 export function RegisterPage() {
   const navigate = useNavigate()
   const { toast } = useToast()
+  const user = useAuthStore((state) => state.user)
   const setSession = useAuthStore((state) => state.setSession)
-  const [selectedRole, setSelectedRole] = useState<Role>('Receptionist')
   const form = useForm<RegisterValues>({
-    resolver: zodResolver(registerSchema) as never,
-    defaultValues: { firstName: '', lastName: '', email: '', password: '', phone: '', clinicId: 1, role: 'Receptionist' },
+    resolver: zodResolver(registerSchema),
+    defaultValues: { firstName: '', lastName: '', email: '', password: '', phone: '' },
   })
   const mutation = useMutation({
     mutationFn: authService.register,
-    onSuccess: (auth) => {
+    onSuccess: async (auth) => {
       setSession(auth)
+      try {
+        const me = await authService.me()
+        useAuthStore.getState().setCurrentUser({ ...me, email: auth.email, fullName: auth.fullName })
+      } catch {
+        // Protected routes will retry /me if the first lookup fails.
+      }
       toast({ kind: 'success', title: 'Account created', description: `You can now work as ${auth.role}` })
       navigate('/dashboard')
     },
     onError: (error) => toast({ kind: 'error', title: 'Could not create account', description: getApiMessage(error) }),
   })
 
-  useEffect(() => {
-    useAuthStore.getState().hydrate()
-  }, [])
+  if (user) return <Navigate to="/dashboard" replace />
 
   return (
-    <AuthFrame title="Create account" description="Choose who you are, then enter your details.">
-      <form className="grid gap-4" onSubmit={form.handleSubmit((values) => mutation.mutate(values as RegisterValues))}>
-        <Field label="I am signing up as" error={form.formState.errors.role?.message}>
-          <div className="grid gap-2 sm:grid-cols-3">
-            {roleChoices.map((choice) => {
-              const Icon = choice.icon
-              const selected = selectedRole === choice.value
-              return (
-                <button
-                  key={choice.value}
-                  type="button"
-                  onClick={() => {
-                    setSelectedRole(choice.value)
-                    form.setValue('role', choice.value, { shouldValidate: true })
-                  }}
-                  className={`rounded-md border p-3 text-left transition ${
-                    selected
-                      ? 'border-[rgb(var(--primary))] bg-[rgb(var(--primary)/0.12)]'
-                      : 'border-[rgb(var(--border))] hover:bg-[rgb(var(--muted))]'
-                  }`}
-                >
-                  <Icon className="mb-2 size-4 text-[rgb(var(--primary))]" />
-                  <span className="block text-sm font-semibold">{choice.label}</span>
-                  <span className="mt-1 block text-xs text-[rgb(var(--muted-foreground))]">{choice.description}</span>
-                </button>
-              )
-            })}
-          </div>
-        </Field>
+    <AuthFrame title="Create account" description="Create a clinic staff account. Admin access is assigned by management.">
+      <form className="grid gap-4" onSubmit={form.handleSubmit((values) => mutation.mutate(values))}>
+        <div className="rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--muted))] px-3 py-2 text-sm text-[rgb(var(--muted-foreground))]">
+          New public accounts are created as Receptionist accounts. A clinic admin can assign elevated access separately.
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="First name" error={form.formState.errors.firstName?.message}>
             <Input {...form.register('firstName')} />
@@ -226,17 +181,12 @@ export function RegisterPage() {
             <Input className="pl-9" type="email" {...form.register('email')} />
           </div>
         </Field>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Phone" error={form.formState.errors.phone?.message}>
-            <div className="relative">
-              <Phone className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[rgb(var(--muted-foreground))]" />
-              <Input className="pl-9" type="tel" {...form.register('phone')} />
-            </div>
-          </Field>
-          <Field label="Clinic ID" error={form.formState.errors.clinicId?.message}>
-            <Input type="number" {...form.register('clinicId')} />
-          </Field>
-        </div>
+        <Field label="Phone" error={form.formState.errors.phone?.message}>
+          <div className="relative">
+            <Phone className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[rgb(var(--muted-foreground))]" />
+            <Input className="pl-9" type="tel" {...form.register('phone')} />
+          </div>
+        </Field>
         <Field label="Password" error={form.formState.errors.password?.message}>
           <Input type="password" autoComplete="new-password" {...form.register('password')} />
         </Field>

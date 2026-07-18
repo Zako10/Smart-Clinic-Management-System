@@ -1,5 +1,18 @@
 export type Role = 'Admin' | 'Doctor' | 'Receptionist'
 
+export const roles = ['Admin', 'Doctor', 'Receptionist'] as const
+
+export function isRole(value: unknown): value is Role {
+  return typeof value === 'string' && roles.includes(value as Role)
+}
+
+export function normalizeRole(value: unknown): Role | null {
+  if (isRole(value)) return value
+  if (typeof value !== 'string') return null
+  const match = roles.find((role) => role.toLowerCase() === value.toLowerCase())
+  return match ?? null
+}
+
 export type ApiResponse<T> = {
   success: boolean
   message: string
@@ -28,6 +41,19 @@ export type AuthResult = {
   email: string
   fullName: string
   role: Role
+}
+
+export type LoginPayload = {
+  email: string
+  password: string
+}
+
+export type RegisterPayload = {
+  firstName: string
+  lastName: string
+  email: string
+  password: string
+  phone: string
 }
 
 export type Clinic = {
@@ -77,6 +103,7 @@ export type Payment = {
   id: number
   invoiceId: number
   amount: number
+  method?: string
 }
 
 export type PaymentMethodValue = 0 | 1
