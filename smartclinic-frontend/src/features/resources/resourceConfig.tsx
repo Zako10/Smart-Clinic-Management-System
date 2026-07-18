@@ -52,6 +52,7 @@ export type ResourceConfig<T> = {
 const requiredText = z.string().min(1, 'Required')
 const positiveNumber = z.coerce.number().int().min(1, 'Must be greater than zero')
 const amount = z.coerce.number().min(0.01, 'Must be greater than zero')
+const text = (value: unknown) => (value == null || value === '' ? '-' : String(value))
 
 export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
   clinics: {
@@ -67,12 +68,12 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
     deleteRoles: ['Admin'],
     query: 'clinics',
     paginated: false,
-    searchable: (clinic: Clinic) => `${clinic.name} ${clinic.email} ${clinic.phone} ${clinic.address}`,
+    searchable: (clinic: Clinic) => `${text(clinic.name)} ${text(clinic.email)} ${text(clinic.phone)} ${text(clinic.address)}`,
     columns: [
-      { label: 'Clinic', render: (clinic: Clinic) => <span className="font-medium">{clinic.name}</span> },
-      { label: 'Email', render: (clinic: Clinic) => clinic.email || '-' },
-      { label: 'Phone', render: (clinic: Clinic) => clinic.phone || '-' },
-      { label: 'Address', render: (clinic: Clinic) => clinic.address || '-' },
+      { label: 'Clinic', render: (clinic: Clinic) => <span className="font-medium">{text(clinic.name)}</span> },
+      { label: 'Email', render: (clinic: Clinic) => text(clinic.email) },
+      { label: 'Phone', render: (clinic: Clinic) => text(clinic.phone) },
+      { label: 'Address', render: (clinic: Clinic) => text(clinic.address) },
     ],
     schema: z.object({
       name: requiredText.max(100),
@@ -103,16 +104,16 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
     query: 'doctors',
     paginated: true,
     searchable: (doctor: Doctor) =>
-      `${doctor.firstName} ${doctor.lastName} ${doctor.specialty} ${doctor.phone} ${doctor.clinicId}`,
+      `${text(doctor.firstName)} ${text(doctor.lastName)} ${text(doctor.specialty)} ${text(doctor.phone)} ${doctor.clinicId}`,
     columns: [
       {
         label: 'Doctor',
         render: (doctor: Doctor) => (
-          <span className="font-medium">Dr. {doctor.firstName} {doctor.lastName}</span>
+          <span className="font-medium">Dr. {text(doctor.firstName)} {text(doctor.lastName)}</span>
         ),
       },
-      { label: 'Specialty', render: (doctor: Doctor) => <Badge tone="info">{doctor.specialty}</Badge> },
-      { label: 'Phone', render: (doctor: Doctor) => doctor.phone },
+      { label: 'Specialty', render: (doctor: Doctor) => <Badge tone="info">{text(doctor.specialty)}</Badge> },
+      { label: 'Phone', render: (doctor: Doctor) => text(doctor.phone) },
       { label: 'Clinic', render: (doctor: Doctor) => `#${doctor.clinicId}` },
     ],
     schema: z.object({
@@ -145,10 +146,10 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
     deleteRoles: ['Admin'],
     query: 'patients',
     paginated: true,
-    searchable: (patient: Patient) => `${patient.fullName} ${patient.phone}`,
+    searchable: (patient: Patient) => `${text(patient.fullName)} ${text(patient.phone)}`,
     columns: [
-      { label: 'Patient', render: (patient: Patient) => <span className="font-medium">{patient.fullName}</span> },
-      { label: 'Phone', render: (patient: Patient) => patient.phone },
+      { label: 'Patient', render: (patient: Patient) => <span className="font-medium">{text(patient.fullName)}</span> },
+      { label: 'Phone', render: (patient: Patient) => text(patient.phone) },
       { label: 'Patient number', render: (patient: Patient) => `#${patient.id}` },
     ],
     schema: z.object({
@@ -180,7 +181,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
     query: 'appointments',
     paginated: true,
     searchable: (appointment: Appointment) =>
-      `${appointment.patientId} ${appointment.doctorId} ${appointment.status} ${appointment.notes}`,
+      `${appointment.patientId} ${appointment.doctorId} ${text(appointment.status)} ${text(appointment.notes)}`,
     columns: [
       { label: 'Date', render: (appointment: Appointment) => formatDateTime(appointment.dateTime) },
       { label: 'Patient', render: (appointment: Appointment) => `#${appointment.patientId}` },
@@ -197,11 +198,11 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
                   : 'warning'
             }
           >
-            {appointment.status}
+            {text(appointment.status)}
           </Badge>
         ),
       },
-      { label: 'Notes', render: (appointment: Appointment) => appointment.notes || '-' },
+      { label: 'Notes', render: (appointment: Appointment) => text(appointment.notes) },
     ],
     schema: z.object({
       dateTime: requiredText,
@@ -251,7 +252,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
     deleteRoles: ['Admin'],
     query: 'invoices',
     paginated: false,
-    searchable: (invoice: Invoice) => `${invoice.appointmentId} ${invoice.totalAmount} ${invoice.status}`,
+    searchable: (invoice: Invoice) => `${invoice.appointmentId} ${invoice.totalAmount} ${text(invoice.status)}`,
     columns: [
       { label: 'Bill', render: (invoice: Invoice) => <span className="font-medium">#{invoice.id}</span> },
       { label: 'Visit', render: (invoice: Invoice) => `#${invoice.appointmentId}` },
@@ -260,7 +261,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
         label: 'Status',
         render: (invoice: Invoice) => (
           <Badge tone={invoice.status === 'Paid' ? 'success' : invoice.status === 'Partial' ? 'warning' : 'neutral'}>
-            {invoice.status}
+            {text(invoice.status)}
           </Badge>
         ),
       },
@@ -289,7 +290,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
     deleteRoles: [],
     query: 'invoices',
     paginated: false,
-    searchable: (invoice: Invoice) => `${invoice.id} ${invoice.status} ${invoice.totalAmount}`,
+    searchable: (invoice: Invoice) => `${invoice.id} ${text(invoice.status)} ${invoice.totalAmount}`,
     columns: [
       { label: 'Invoice', render: (invoice: Invoice) => <span className="font-medium">#{invoice.id}</span> },
       { label: 'Invoice amount', render: (invoice: Invoice) => currency.format(invoice.totalAmount) },
@@ -297,7 +298,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig<any>> = {
         label: 'Status',
         render: (invoice: Invoice) => (
           <Badge tone={invoice.status === 'Paid' ? 'success' : invoice.status === 'Partial' ? 'warning' : 'neutral'}>
-            {invoice.status}
+            {text(invoice.status)}
           </Badge>
         ),
       },

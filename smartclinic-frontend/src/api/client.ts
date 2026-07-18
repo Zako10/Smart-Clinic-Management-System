@@ -48,6 +48,14 @@ export function getApiMessage(error: unknown, fallback = 'Something went wrong')
   return fallback
 }
 
+export function unwrapApiData<T>(response: { data?: T; Data?: T }) {
+  return response.data ?? response.Data
+}
+
+export function unwrapApiMessage(response: { message?: string; Message?: string }) {
+  return response.message ?? response.Message ?? 'Done'
+}
+
 function friendlyMessage(message: string, status?: number) {
   const normalized = message.toLowerCase()
   if (normalized.includes('email already registered')) {

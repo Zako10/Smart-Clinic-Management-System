@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CreditCard, Edit3, Plus, Search, Trash2 } from 'lucide-react'
-import { getApiMessage } from '../../api/client'
+import { getApiMessage, unwrapApiMessage } from '../../api/client'
 import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
 import { Card, CardHeader } from '../../components/ui/card'
@@ -59,7 +59,7 @@ export function ResourcePage<T extends Identifiable>({ config }: { config: Resou
       queryClient.invalidateQueries({ queryKey: [config.query] })
       setIsFormOpen(false)
       setEditing(null)
-      toast({ kind: 'success', title: 'Saved', description: response.message })
+      toast({ kind: 'success', title: 'Saved', description: unwrapApiMessage(response) })
     },
     onError: (error) => {
       toast({ kind: 'error', title: 'Request failed', description: getApiMessage(error) })
@@ -71,7 +71,7 @@ export function ResourcePage<T extends Identifiable>({ config }: { config: Resou
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: [config.query] })
       setDeleting(null)
-      toast({ kind: 'success', title: 'Deleted', description: response.message })
+      toast({ kind: 'success', title: 'Deleted', description: unwrapApiMessage(response) })
     },
     onError: (error) => {
       toast({ kind: 'error', title: 'Delete failed', description: getApiMessage(error) })
@@ -82,7 +82,13 @@ export function ResourcePage<T extends Identifiable>({ config }: { config: Resou
     const rawItems = query.data ? (isPaginated(query.data) ? query.data.items : query.data) : []
     const term = search.trim().toLowerCase()
     if (!term) return rawItems as T[]
-    return (rawItems as T[]).filter((item) => config.searchable(item).toLowerCase().includes(term))
+    return (rawItems as T[]).filter((item) => {
+      try {
+        return config.searchable(item).toLowerCase().includes(term)
+      } catch {
+        return false
+      }
+    })
   }, [config, query.data, search])
   const pageInfo = query.data && isPaginated(query.data) ? query.data : null
   const Icon = config.icon

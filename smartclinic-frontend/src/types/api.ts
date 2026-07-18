@@ -14,10 +14,14 @@ export function normalizeRole(value: unknown): Role | null {
 }
 
 export type ApiResponse<T> = {
-  success: boolean
-  message: string
-  data: T
+  success?: boolean
+  Success?: boolean
+  message?: string
+  Message?: string
+  data?: T
+  Data?: T
   errors?: Record<string, string[]>
+  Errors?: Record<string, string[]>
 }
 
 export type PaginatedResult<T> = {
@@ -77,6 +81,7 @@ export type Patient = {
   id: number
   fullName: string
   phone: string
+  clinicId?: number
 }
 
 export type AppointmentStatus = 'Scheduled' | 'Completed' | 'Cancelled'
@@ -89,7 +94,7 @@ export type Appointment = {
   doctorId: number
   clinicId: number
   status: AppointmentStatus
-  notes: string
+  notes?: string | null
 }
 
 export type Invoice = {

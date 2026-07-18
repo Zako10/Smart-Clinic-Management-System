@@ -1,4 +1,4 @@
-import { apiClient } from '../api/client'
+import { apiClient, unwrapApiData } from '../api/client'
 import type {
   ApiResponse,
   Appointment,
@@ -14,8 +14,19 @@ function asArray<T>(value: unknown): T[] {
   return Array.isArray(value) ? (value as T[]) : []
 }
 
-function asPaginated<T>(value: PaginatedResult<T> | null | undefined, pageNumber: number, pageSize: number) {
-  if (!value || !Array.isArray(value.items)) {
+function asPaginated<T>(
+  value: (Partial<PaginatedResult<T>> & {
+    Items?: T[]
+    PageNumber?: number
+    PageSize?: number
+    TotalCount?: number
+    TotalPages?: number
+  }) | null | undefined,
+  pageNumber: number,
+  pageSize: number,
+) {
+  const items = value?.items ?? value?.Items
+  if (!value || !Array.isArray(items)) {
     return {
       items: [],
       pageNumber,
@@ -26,41 +37,44 @@ function asPaginated<T>(value: PaginatedResult<T> | null | undefined, pageNumber
   }
 
   return {
-    ...value,
-    pageNumber: value.pageNumber || pageNumber,
-    pageSize: value.pageSize || pageSize,
-    totalCount: value.totalCount ?? value.items.length,
-    totalPages: value.totalPages ?? Math.ceil((value.totalCount ?? value.items.length) / (value.pageSize || pageSize)),
+    items,
+    pageNumber: value.pageNumber ?? value.PageNumber ?? pageNumber,
+    pageSize: value.pageSize ?? value.PageSize ?? pageSize,
+    totalCount: value.totalCount ?? value.TotalCount ?? items.length,
+    totalPages:
+      value.totalPages ??
+      value.TotalPages ??
+      Math.ceil((value.totalCount ?? value.TotalCount ?? items.length) / (value.pageSize ?? value.PageSize ?? pageSize)),
   }
 }
 
 export const resourceService = {
   async clinics() {
     const { data } = await apiClient.get<ApiResponse<Clinic[]>>('/Clinic')
-    return asArray<Clinic>(data.data)
+    return asArray<Clinic>(unwrapApiData(data))
   },
   async doctors(params: PaginationParams) {
     const { data } = await apiClient.get<ApiResponse<PaginatedResult<Doctor>>>('/Doctor', {
       params,
     })
-    return asPaginated(data.data, params.pageNumber ?? 1, params.pageSize ?? 10)
+    return asPaginated(unwrapApiData(data), params.pageNumber ?? 1, params.pageSize ?? 10)
   },
   async patients(params: PaginationParams) {
     const { data } = await apiClient.get<ApiResponse<PaginatedResult<Patient>>>('/Patient', {
       params,
     })
-    return asPaginated(data.data, params.pageNumber ?? 1, params.pageSize ?? 10)
+    return asPaginated(unwrapApiData(data), params.pageNumber ?? 1, params.pageSize ?? 10)
   },
   async appointments(params: PaginationParams) {
     const { data } = await apiClient.get<ApiResponse<PaginatedResult<Appointment>>>(
       '/Appointment',
       { params },
     )
-    return asPaginated(data.data, params.pageNumber ?? 1, params.pageSize ?? 10)
+    return asPaginated(unwrapApiData(data), params.pageNumber ?? 1, params.pageSize ?? 10)
   },
   async invoices() {
     const { data } = await apiClient.get<ApiResponse<Invoice[]>>('/Invoice')
-    return asArray<Invoice>(data.data)
+    return asArray<Invoice>(unwrapApiData(data))
   },
   async create(path: string, payload: unknown) {
     const { data } = await apiClient.post<ApiResponse<unknown>>(path, payload)
